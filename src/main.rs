@@ -1,7 +1,7 @@
-use jsonrpc_http_server::jsonrpc_core::{IoHandler, Value, Params};
+use crate::utils::{check_request_params_error, values_to_u8_vec};
+use jsonrpc_http_server::jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_http_server::ServerBuilder;
 use smt::generate_registry_smt;
-use crate::utils::{check_request_params_error, values_to_u8_vec};
 
 mod smt;
 mod utils;
@@ -18,9 +18,12 @@ fn main() {
                 let lock_hashes = values_to_u8_vec(values);
                 let (root_hash, witness_data) = generate_registry_smt(lock_hashes);
 
-                Ok(Value::Array(vec![Value::String(root_hash), Value::String(witness_data)]))
-            },
-            _ => Ok(Value::String("Parameters error".to_owned()))
+                Ok(Value::Array(vec![
+                    Value::String(root_hash),
+                    Value::String(witness_data),
+                ]))
+            }
+            _ => Ok(Value::String("Parameters error".to_owned())),
         }
     });
 

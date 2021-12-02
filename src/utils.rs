@@ -67,7 +67,7 @@ fn test_check_request_params() {
     let values = vec![Value::String(
         "0xea28c98f38b4a57aa81756b167bb37fa42daf67edbc9863afb8172096ed301c2".to_string(),
     )];
-    assert!(!check_request_params(values).is_none());
+    assert!(check_request_params(values).is_none());
 
     let values = vec![
         Value::String(

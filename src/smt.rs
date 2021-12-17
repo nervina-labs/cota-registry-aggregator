@@ -1,6 +1,8 @@
 use cota_smt::common::{Byte32, BytesBuilder};
 use cota_smt::molecule::prelude::*;
-use cota_smt::registry::{CotaNFTRegistryEntriesBuilder, Registry, RegistryBuilder, RegistryVecBuilder};
+use cota_smt::registry::{
+    CotaNFTRegistryEntriesBuilder, Registry, RegistryBuilder, RegistryVecBuilder,
+};
 use cota_smt::smt::{Blake2bHasher, H256, SMT};
 
 pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> (String, String) {
@@ -59,7 +61,7 @@ fn generate_smt(origin_lock_hashes: Vec<[u8; 32]>, lock_hashes: Vec<[u8; 32]>) -
                 .state(Byte32::from_slice(&value).unwrap())
                 .build()
         })
-            .collect::<Vec<Registry>>();
+        .collect::<Vec<Registry>>();
 
     let registry_vec = RegistryVecBuilder::default().extend(registry_vec).build();
     let merkel_proof_bytes = BytesBuilder::default()

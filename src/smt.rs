@@ -1,9 +1,7 @@
-use nft_smt::common::{Byte32, BytesBuilder};
-use nft_smt::molecule::prelude::*;
-use nft_smt::registry::{
-    CompactNFTRegistryEntriesBuilder, KVPair, KVPairBuilder, KVPairVecBuilder,
-};
-use nft_smt::smt::{Blake2bHasher, H256, SMT};
+use cota_smt::common::{Byte32, BytesBuilder};
+use cota_smt::molecule::prelude::*;
+use cota_smt::registry::{CotaNFTRegistryEntriesBuilder, Registry, RegistryBuilder, RegistryVecBuilder};
+use cota_smt::smt::{Blake2bHasher, H256, SMT};
 
 pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> (String, String) {
     generate_smt(vec![], lock_hashes)
@@ -51,27 +49,26 @@ fn generate_smt(origin_lock_hashes: Vec<[u8; 32]>, lock_hashes: Vec<[u8; 32]>) -
 
     println!("smt proof: {:?}", merkel_proof_vec);
 
-    let kv_pair_vec = update_leaves
+    let registry_vec = update_leaves
         .iter()
         .map(|leave| {
             let key: [u8; 32] = leave.0.into();
             let value: [u8; 32] = leave.1.into();
-            KVPairBuilder::default()
-                .k(Byte32::from_slice(&key).unwrap())
-                .v(Byte32::from_slice(&value).unwrap())
+            RegistryBuilder::default()
+                .lock_hash(Byte32::from_slice(&key).unwrap())
+                .state(Byte32::from_slice(&value).unwrap())
                 .build()
         })
-        .collect::<Vec<KVPair>>();
+            .collect::<Vec<Registry>>();
 
-    let entries_builder = CompactNFTRegistryEntriesBuilder::default();
-    let kv_pair_vec_builder = KVPairVecBuilder::default();
+    let registry_vec = RegistryVecBuilder::default().extend(registry_vec).build();
     let merkel_proof_bytes = BytesBuilder::default()
         .extend(merkel_proof_vec.iter().map(|v| Byte::from(*v)))
         .build();
 
-    let witness_data = entries_builder
-        .kv_state(kv_pair_vec_builder.set(kv_pair_vec).build())
-        .kv_proof(merkel_proof_bytes)
+    let witness_data = CotaNFTRegistryEntriesBuilder::default()
+        .registries(registry_vec)
+        .proof(merkel_proof_bytes)
         .build();
 
     let witness_data_hex = hex::encode(witness_data.as_slice());

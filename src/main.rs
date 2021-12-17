@@ -9,7 +9,7 @@ mod utils;
 
 fn main() {
     let mut io = IoHandler::default();
-    io.add_method("register_compact_nft", |params: Params| async move {
+    io.add_method("register_cota_cells", |params: Params| async move {
         match params {
             Params::Array(values) => {
                 println!("params: {:?}", values);

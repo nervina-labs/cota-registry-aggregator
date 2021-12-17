@@ -1,6 +1,6 @@
 # cota-registry-aggregator
 
-The aggregator of CoTA registry service
+The aggregator of [CoTA](https://github.com/nervina-labs/ckb-cota-scripts) registry service
 
 ### Quick Start
 ```shell

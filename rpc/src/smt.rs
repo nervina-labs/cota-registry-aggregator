@@ -1,3 +1,4 @@
+use crate::db::get_registry_lock_hashes;
 use cota_smt::common::{Byte32, BytesBuilder};
 use cota_smt::molecule::prelude::*;
 use cota_smt::registry::{
@@ -6,15 +7,12 @@ use cota_smt::registry::{
 use cota_smt::smt::{Blake2bHasher, H256, SMT};
 
 pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> (String, String) {
-    generate_smt(vec![], lock_hashes)
-}
-
-fn generate_smt(origin_lock_hashes: Vec<[u8; 32]>, lock_hashes: Vec<[u8; 32]>) -> (String, String) {
     let mut smt = SMT::default();
     let update_leaves_count = lock_hashes.len();
 
-    if !origin_lock_hashes.is_empty() {
-        for lock_hash in origin_lock_hashes {
+    let registered_lock_hashes = get_registry_lock_hashes();
+    if !registered_lock_hashes.is_empty() {
+        for lock_hash in registered_lock_hashes {
             let key: H256 = H256::from(lock_hash);
             let value: H256 = H256::from([255u8; 32]);
             smt.update(key, value).expect("SMT update leave error");
@@ -68,52 +66,14 @@ fn generate_smt(origin_lock_hashes: Vec<[u8; 32]>, lock_hashes: Vec<[u8; 32]>) -
         .extend(merkel_proof_vec.iter().map(|v| Byte::from(*v)))
         .build();
 
-    let witness_data = CotaNFTRegistryEntriesBuilder::default()
+    let registry_entries = CotaNFTRegistryEntriesBuilder::default()
         .registries(registry_vec)
         .proof(merkel_proof_bytes)
         .build();
 
-    let witness_data_hex = hex::encode(witness_data.as_slice());
+    let registry_entries_hex = hex::encode(registry_entries.as_slice());
 
-    println!("witness_data_hex: {:?}", witness_data_hex);
+    println!("registry_entries_hex: {:?}", registry_entries_hex);
 
-    (root_hash_hex, witness_data_hex)
-}
-
-#[test]
-fn create_smt() {
-    let lock_hash: [u8; 32] = [
-        234, 40, 201, 143, 56, 180, 165, 122, 168, 23, 86, 177, 103, 187, 55, 250, 66, 218, 246,
-        126, 219, 201, 134, 58, 251, 129, 114, 9, 110, 211, 1, 194,
-    ];
-    println!("{:?}", hex::encode(&lock_hash));
-    let lock_hashes = vec![lock_hash];
-    let (root_hash, witness_data) = generate_smt(vec![], lock_hashes);
-    assert_eq!(
-        root_hash,
-        "b6719be3614c76a651b86562c1f35f7cc8d4d2a129dfc75759fc82d601ae5670"
-    );
-    assert_eq!(witness_data, "570000000c0000005000000001000000ea28c98f38b4a57aa81756b167bb37fa42daf67edbc9863afb8172096ed301c2ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff030000004c4f00");
-}
-
-#[test]
-fn update_smt() {
-    let origin_lock_hash: [u8; 32] = [
-        234, 40, 201, 143, 56, 180, 165, 122, 168, 23, 86, 177, 103, 187, 55, 250, 66, 218, 246,
-        126, 219, 201, 134, 58, 251, 129, 114, 9, 110, 211, 1, 194,
-    ];
-    let origin_lock_hashes = vec![origin_lock_hash];
-
-    let lock_hash: [u8; 32] = [
-        50, 247, 246, 45, 198, 8, 45, 245, 35, 87, 121, 193, 186, 170, 5, 86, 60, 208, 149, 227,
-        148, 193, 36, 253, 2, 16, 17, 42, 160, 219, 182, 130,
-    ];
-    let lock_hashes = vec![lock_hash];
-
-    let (root_hash, witness_data) = generate_smt(origin_lock_hashes, lock_hashes);
-    assert_eq!(
-        root_hash,
-        "bae562505da06ad2226ffc876b09d97b908e63820bb49a7f31d88833b34a800a"
-    );
-    assert_eq!(witness_data, "9b0000000c000000500000000100000032f7f62dc6082df5235779c1baaa05563cd095e394c124fd0210112aa0dbb682ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff470000004c4ffe51fe2eb9ab9a5e3041755a0ec60170a09b5187ee3b40a17e1cc7232e68b37302f014ea28c98f38b4a57aa81756b167bb37fa42daf67edbc9863afb8172096ed301024f01");
+    (root_hash_hex, registry_entries_hex)
 }

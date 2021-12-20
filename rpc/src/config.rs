@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
-use std::{env, fs};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 pub const CONFIG_FILE: &str = "aggregator.toml";
 

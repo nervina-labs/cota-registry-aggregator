@@ -1,8 +1,8 @@
+use crate::config::load_config;
 use lazy_static::lazy_static;
 use mysql::prelude::*;
 use mysql::*;
 use std::sync::Mutex;
-use crate::config::load_config;
 
 lazy_static! {
     pub static ref CONN: Mutex<PooledConn> = {
@@ -30,4 +30,3 @@ pub fn get_registry_lock_hashes() -> Vec<[u8; 32]> {
         .collect::<Vec<[u8; 32]>>();
     lock_hashes
 }
-

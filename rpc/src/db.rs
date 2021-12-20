@@ -2,11 +2,12 @@ use lazy_static::lazy_static;
 use mysql::prelude::*;
 use mysql::*;
 use std::sync::Mutex;
+use crate::config::load_config;
 
 lazy_static! {
     pub static ref CONN: Mutex<PooledConn> = {
-        let url = "mysql://root:password@localhost:3306/MYDB";
-        let pool = Pool::new(url).expect("Database poll error");
+        let url = load_config().database;
+        let pool = Pool::new(url).expect("Database pool error");
         Mutex::new(pool.get_conn().expect("Database connection error"))
     };
 }
@@ -29,3 +30,4 @@ pub fn get_registry_lock_hashes() -> Vec<[u8; 32]> {
         .collect::<Vec<[u8; 32]>>();
     lock_hashes
 }
+

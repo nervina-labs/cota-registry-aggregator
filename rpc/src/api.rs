@@ -14,9 +14,9 @@ pub async fn generate_registry_cota_smt(params: Params) -> Result<Value, Error> 
         let (root_hash, registry_entries_hex) = generate_registry_smt(parameters);
 
         let mut response = Map::new();
-        response.insert("registry_smt_entries".to_string(), Value::String(root_hash));
+        response.insert("smt_root_hash".to_string(), Value::String(root_hash));
         response.insert(
-            "smt_root_hash".to_string(),
+            "registry_smt_entries".to_string(),
             Value::String(registry_entries_hex),
         );
 

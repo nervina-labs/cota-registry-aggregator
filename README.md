@@ -25,5 +25,5 @@ echo '{
 }' \
 | tr -d '\n' \
 | curl -H 'content-type: application/json' -d @- \
-http://localhost:3030
+http://localhost:3050
 ```

@@ -1,16 +1,23 @@
-use crate::db::get_registry_lock_hashes;
+use crate::db::{check_lock_hashes_registered, get_registered_lock_hashes};
+use crate::error::Error;
 use cota_smt::common::{Byte32, BytesBuilder};
 use cota_smt::molecule::prelude::*;
 use cota_smt::registry::{
     CotaNFTRegistryEntriesBuilder, Registry, RegistryBuilder, RegistryVecBuilder,
 };
 use cota_smt::smt::{Blake2bHasher, H256, SMT};
+use jsonrpc_http_server::jsonrpc_core::serde_json::Map;
+use jsonrpc_http_server::jsonrpc_core::Value;
 
-pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> (String, String) {
+pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, Value>, Error> {
     let mut smt = SMT::default();
     let update_leaves_count = lock_hashes.len();
 
-    let registered_lock_hashes = get_registry_lock_hashes();
+    if check_lock_hashes_registered(lock_hashes.clone())? {
+        return Err(Error::LockHashHasRegistered);
+    }
+
+    let registered_lock_hashes = get_registered_lock_hashes()?;
     if !registered_lock_hashes.is_empty() {
         for lock_hash in registered_lock_hashes {
             let key: H256 = H256::from(lock_hash);
@@ -40,10 +47,9 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> (String, String) {
     let registry_merkle_proof_compiled = registry_merkle_proof
         .compile(update_leaves.clone())
         .unwrap();
-    let verify_result = registry_merkle_proof_compiled
+    registry_merkle_proof_compiled
         .verify::<Blake2bHasher>(&root_hash, update_leaves.clone())
         .expect("smt proof verify failed");
-    assert!(verify_result, "smt proof verify failed");
 
     let merkel_proof_vec: Vec<u8> = registry_merkle_proof_compiled.into();
 
@@ -75,5 +81,11 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> (String, String) {
 
     println!("registry_entries_hex: {:?}", registry_entries_hex);
 
-    (root_hash_hex, registry_entries_hex)
+    let mut result = Map::new();
+    result.insert("smt_root_hash".to_string(), Value::String(root_hash_hex));
+    result.insert(
+        "registry_smt_entry".to_string(),
+        Value::String(registry_entries_hex),
+    );
+    Ok(result)
 }

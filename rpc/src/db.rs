@@ -1,32 +1,46 @@
 use crate::config::load_config;
+use crate::error::Error;
+use crate::utils::parse_bytes_n;
 use lazy_static::lazy_static;
 use mysql::prelude::*;
 use mysql::*;
-use std::sync::Mutex;
+use std::{result::Result, sync::Mutex};
 
 lazy_static! {
     pub static ref CONN: Mutex<PooledConn> = {
-        let url = load_config().database;
+        let url = load_config().database_url;
         let pool = Pool::new(url).expect("Database pool error");
         Mutex::new(pool.get_conn().expect("Database connection error"))
     };
 }
 
-pub fn get_registry_lock_hashes() -> Vec<[u8; 32]> {
-    let res: Vec<String> = CONN
+pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
+    let result: Vec<[u8; 32]> = CONN
         .lock()
         .unwrap()
-        .query("select lock_hash from register_cota_kv_pairs")
-        .expect("Select lock hashes error");
+        .query_map(
+            "select lock_hash from register_cota_kv_pairs",
+            |lock_hash| parse_mysql_bytes_n::<32>(lock_hash),
+        )
+        .map_err(|e| Error::DatabaseQueryError(e.to_string()))?;
+    Ok(result)
+}
 
-    let mut lock_hash_vec = [0u8; 32];
-    let lock_hashes = res
-        .iter()
-        .map(|hash| {
-            let hex_hash = hex::decode(hash).expect("Hex decode error");
-            lock_hash_vec.copy_from_slice(&hex_hash);
-            lock_hash_vec
-        })
-        .collect::<Vec<[u8; 32]>>();
-    lock_hashes
+fn parse_mysql_bytes_n<const N: usize>(v: Value) -> [u8; N] {
+    let vec = from_value::<Vec<u8>>(v);
+    parse_bytes_n::<N>(String::from_utf8(vec).unwrap()).unwrap()
+}
+
+pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<bool, Error> {
+    let lock_hash_vec: Vec<String> = lock_hashes.iter().map(|hash| hex::encode(hash)).collect();
+    let lock_hash_array = lock_hash_vec.join("','");
+    let result: Vec<String> = CONN
+        .lock()
+        .unwrap()
+        .query(format!(
+            "select lock_hash from register_cota_kv_pairs where lock_hash in ('{}')",
+            lock_hash_array
+        ))
+        .map_err(|e| Error::DatabaseQueryError(e.to_string()))?;
+    Ok(result.len() > 0)
 }

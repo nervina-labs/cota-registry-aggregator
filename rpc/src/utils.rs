@@ -51,7 +51,6 @@ pub fn parse_bytes_n<const N: usize>(value: String) -> Result<[u8; N], Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use jsonrpc_http_server::jsonrpc_core::Value;
 
     #[test]
     fn test_remove_0x() {

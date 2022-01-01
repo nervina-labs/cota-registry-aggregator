@@ -24,7 +24,7 @@ impl Error {
                 msg
             ),
             Self::LockHashHasRegistered => "The lock_hash has registered".to_string(),
-            Self::DatabaseQueryError(msg) => format!("Database '{}' query error", msg),
+            Self::DatabaseQueryError(_) => "Internal error".to_string(),
         }
     }
 }

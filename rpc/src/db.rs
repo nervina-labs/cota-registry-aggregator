@@ -2,6 +2,7 @@ use crate::config::load_config;
 use crate::error::Error;
 use crate::utils::parse_bytes_n;
 use lazy_static::lazy_static;
+use log::error;
 use mysql::prelude::*;
 use mysql::*;
 use std::{result::Result, sync::Mutex};
@@ -15,15 +16,16 @@ lazy_static! {
 }
 
 pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
-    let result: Vec<[u8; 32]> = CONN
-        .lock()
+    CONN.lock()
         .unwrap()
         .query_map(
             "select lock_hash from register_cota_kv_pairs",
             |lock_hash| parse_mysql_bytes_n::<32>(lock_hash),
         )
-        .map_err(|e| Error::DatabaseQueryError(e.to_string()))?;
-    Ok(result)
+        .map_err(|e| {
+            error!("Query registry error: {}", e.to_string());
+            Error::DatabaseQueryError(e.to_string())
+        })
 }
 
 fn parse_mysql_bytes_n<const N: usize>(v: Value) -> [u8; N] {
@@ -41,6 +43,9 @@ pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<bool, 
             "select lock_hash from register_cota_kv_pairs where lock_hash in ('{}')",
             lock_hash_array
         ))
-        .map_err(|e| Error::DatabaseQueryError(e.to_string()))?;
+        .map_err(|e| {
+            error!("Query registry error: {}", e.to_string());
+            Error::DatabaseQueryError(e.to_string())
+        })?;
     Ok(result.len() > 0)
 }

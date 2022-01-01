@@ -8,6 +8,7 @@ use cota_smt::registry::{
 use cota_smt::smt::{Blake2bHasher, H256, SMT};
 use jsonrpc_http_server::jsonrpc_core::serde_json::Map;
 use jsonrpc_http_server::jsonrpc_core::Value;
+use log::info;
 
 pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, Value>, Error> {
     let mut smt = SMT::default();
@@ -39,7 +40,7 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, V
     root_hash_bytes.copy_from_slice(root_hash.as_slice());
     let root_hash_hex = hex::encode(root_hash_bytes);
 
-    println!("smt root hash: {:?}", root_hash_hex);
+    info!("registry_smt_root_hash: {:?}", root_hash_hex);
 
     let registry_merkle_proof = smt
         .merkle_proof(update_leaves.iter().map(|leave| leave.0).collect())
@@ -52,8 +53,6 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, V
         .expect("smt proof verify failed");
 
     let merkel_proof_vec: Vec<u8> = registry_merkle_proof_compiled.into();
-
-    println!("smt proof: {:?}", merkel_proof_vec);
 
     let registry_vec = update_leaves
         .iter()
@@ -79,7 +78,7 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, V
 
     let registry_entries_hex = hex::encode(registry_entries.as_slice());
 
-    println!("registry_entries_hex: {:?}", registry_entries_hex);
+    info!("registry_smt_entry: {:?}", registry_entries_hex);
 
     let mut result = Map::new();
     result.insert("smt_root_hash".to_string(), Value::String(root_hash_hex));

@@ -17,6 +17,12 @@ cargo test
 ### Usage
 
 ```shell
+cargo build --release
+
+RUST_LOG=info ./target/release/cota-registry-aggregator -s /tmp/cota-registry-aggregator-test
+```
+
+```shell
 echo '{
     "id": 2,
     "jsonrpc": "2.0",

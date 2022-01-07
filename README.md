@@ -19,7 +19,7 @@ cargo test
 ```shell
 cargo build --release
 
-RUST_LOG=info ./target/release/cota-registry-aggregator -s /tmp/cota-registry-aggregator-test
+RUST_LOG=info ./target/release/cota-registry-aggregator
 ```
 
 ```shell

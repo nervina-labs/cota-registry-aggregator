@@ -400,6 +400,7 @@ version = "0.1.0"
 dependencies = [
  "env_logger",
  "jsonrpc-http-server",
+ "log",
  "rpc",
 ]
 

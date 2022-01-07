@@ -1,5 +1,6 @@
 use jsonrpc_http_server::jsonrpc_core::{IoHandler, Params};
 use jsonrpc_http_server::ServerBuilder;
+use log::info;
 use rpc::api::register_rpc;
 
 const REGISTER_RPC: &'static str = "register_cota_cells";
@@ -8,6 +9,7 @@ fn main() {
     env_logger::Builder::from_default_env()
         .format_timestamp(Some(env_logger::fmt::TimestampPrecision::Millis))
         .init();
+    info!("Registry aggregator server start");
     let mut io = IoHandler::default();
     io.add_method(REGISTER_RPC, move |params: Params| register_rpc(params));
 

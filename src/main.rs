@@ -9,7 +9,7 @@ fn main() {
     env_logger::Builder::from_default_env()
         .format_timestamp(Some(env_logger::fmt::TimestampPrecision::Millis))
         .init();
-    info!("Registry aggregator server start");
+
     let mut io = IoHandler::default();
     io.add_method(REGISTER_RPC, move |params: Params| register_rpc(params));
 
@@ -17,6 +17,8 @@ fn main() {
         .threads(3)
         .start_http(&"127.0.0.1:3050".parse().unwrap())
         .unwrap();
+
+    info!("Registry cota aggregator server start");
 
     server.wait();
 }

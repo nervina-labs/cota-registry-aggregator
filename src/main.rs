@@ -15,7 +15,7 @@ fn main() {
 
     let server = ServerBuilder::new(io)
         .threads(3)
-        .start_http(&"127.0.0.1:3050".parse().unwrap())
+        .start_http(&"0.0.0.0:3050".parse().unwrap())
         .unwrap();
 
     info!("Registry cota aggregator server start");

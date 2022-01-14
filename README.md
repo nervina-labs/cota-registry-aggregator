@@ -59,7 +59,7 @@ http://localhost:3050
 ```shell
 # Build cota-aggregator images from the Dockerfile and run cota-aggregator via docker
 docker build -t cota-registry-aggregator .
-docker run -d -p 3050:3050 cota-registry-aggregator:latest
+docker run -d -p 3050:3050 --name cota-registry-aggregator cota-registry-aggregator:latest
 
 # or
 docker-compose up -d --build

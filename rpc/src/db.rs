@@ -5,8 +5,8 @@ use lazy_static::lazy_static;
 use log::error;
 use mysql::prelude::*;
 use mysql::*;
-use std::{result::Result, sync::Mutex};
 use std::env;
+use std::{result::Result, sync::Mutex};
 
 lazy_static! {
     pub static ref CONN: Mutex<PooledConn> = {
@@ -21,7 +21,8 @@ lazy_static! {
         } else {
             20
         };
-        let pool = Pool::new_manual(min, max, Opts::from_url(&url).unwrap()).expect("Database pool error");
+        let pool =
+            Pool::new_manual(min, max, Opts::from_url(&url).unwrap()).expect("Database pool error");
         Mutex::new(pool.get_conn().expect("Database connection error"))
     };
 }

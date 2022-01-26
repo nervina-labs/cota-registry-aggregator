@@ -1,6 +1,6 @@
 # cota-registry-aggregator
 
-The aggregator of [CoTA](https://github.com/nervina-labs/ckb-cota-scripts) registry service
+The aggregator of [CoTA](https://talk.nervos.org/t/rfc-cota-a-compact-token-aggregator-standard-for-extremely-low-cost-nfts-and-fts/6338) registry service
 
 ### Quick Start
 

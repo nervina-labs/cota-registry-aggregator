@@ -47,7 +47,7 @@ echo '{
     "id": 2,
     "jsonrpc": "2.0",
     "method": "register_cota_cells",
-    "params": ["0xea28c98f38b4a57aa81756b167bb37fa42daf67edbc9863afb8172096ed301c2"]
+    "params": ["0x8a8f45a094cbe050d1a612924901b11edc1bce28c0fd8d96cdc8779889f28aa8"]
 }' \
 | tr -d '\n' \
 | curl -H 'content-type: application/json' -d @- \

@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS register_cota_kv_pairs;

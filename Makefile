@@ -12,7 +12,7 @@ test:
 
 run:
 	cargo fmt
-	cargo run
+	RUST_LOG=info cargo run
 
 install:
 	cargo fmt

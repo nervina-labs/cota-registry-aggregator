@@ -14,6 +14,9 @@ run:
 	cargo fmt
 	RUST_LOG=info cargo run
 
+run-release:
+	RUST_LOG=info ./target/release/cota-registry-aggregator
+
 install:
 	cargo fmt
 	cargo install --path .

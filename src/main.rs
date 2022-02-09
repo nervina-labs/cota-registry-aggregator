@@ -1,7 +1,18 @@
+#[macro_use]
+extern crate diesel;
+extern crate dotenv;
+
+use crate::api::register_rpc;
 use jsonrpc_http_server::jsonrpc_core::{IoHandler, Params};
 use jsonrpc_http_server::ServerBuilder;
 use log::info;
-use rpc::api::register_rpc;
+
+mod api;
+mod db;
+mod error;
+mod schema;
+mod smt;
+mod utils;
 
 const REGISTER_RPC: &'static str = "register_cota_cells";
 

@@ -289,7 +289,6 @@ dependencies = [
  "failure",
  "hex",
  "jsonrpc-http-server",
- "lazy_static",
  "log",
  "openssl",
  "serde",

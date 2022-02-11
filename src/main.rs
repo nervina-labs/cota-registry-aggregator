@@ -3,7 +3,7 @@ extern crate diesel;
 extern crate dotenv;
 
 use crate::api::register_rpc;
-use jsonrpc_http_server::jsonrpc_core::{IoHandler, Params};
+use jsonrpc_http_server::jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use log::info;
 
@@ -14,15 +14,13 @@ mod schema;
 mod smt;
 mod utils;
 
-const REGISTER_RPC: &'static str = "register_cota_cells";
-
 fn main() {
     env_logger::Builder::from_default_env()
         .format_timestamp(Some(env_logger::fmt::TimestampPrecision::Millis))
         .init();
 
     let mut io = IoHandler::default();
-    io.add_method(REGISTER_RPC, move |params: Params| register_rpc(params));
+    io.add_method("register_cota_cells", register_rpc);
 
     let server = ServerBuilder::new(io)
         .threads(3)

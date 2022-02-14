@@ -6,7 +6,7 @@ use cota_smt::registry::{
     CotaNFTRegistryEntriesBuilder, Registry, RegistryBuilder, RegistryVecBuilder,
 };
 use cota_smt::smt::{Blake2bHasher, H256, SMT};
-use jsonrpc_http_server::jsonrpc_core::serde_json::Map;
+use jsonrpc_http_server::jsonrpc_core::serde_json::{Map, Number};
 use jsonrpc_http_server::jsonrpc_core::Value;
 use log::info;
 
@@ -18,7 +18,7 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, V
         return Err(Error::LockHashHasRegistered);
     }
 
-    let registered_lock_hashes = get_registered_lock_hashes()?;
+    let (registered_lock_hashes, block_number) = get_registered_lock_hashes()?;
     if !registered_lock_hashes.is_empty() {
         for lock_hash in registered_lock_hashes {
             let key: H256 = H256::from(lock_hash);
@@ -76,15 +76,19 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, V
         .proof(merkel_proof_bytes)
         .build();
 
-    let registry_entries_hex = hex::encode(registry_entries.as_slice());
+    let registry_entry = hex::encode(registry_entries.as_slice());
 
-    info!("registry_smt_entry: {:?}", registry_entries_hex);
+    info!("registry_smt_entry: {:?}", registry_entry);
 
     let mut result = Map::new();
     result.insert("smt_root_hash".to_string(), Value::String(root_hash_hex));
     result.insert(
         "registry_smt_entry".to_string(),
-        Value::String(registry_entries_hex),
+        Value::String(registry_entry),
+    );
+    result.insert(
+        "block_number".to_string(),
+        Value::Number(Number::from(block_number)),
     );
     Ok(result)
 }

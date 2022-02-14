@@ -1,5 +1,7 @@
 use super::schema::register_cota_kv_pairs::dsl::*;
 use crate::error::Error;
+use crate::schema::check_infos::dsl::block_number;
+use crate::schema::check_infos::dsl::check_infos;
 use crate::utils::parse_bytes_n;
 use diesel::r2d2::{self, ConnectionManager, PooledConnection};
 use diesel::*;
@@ -23,9 +25,9 @@ fn establish_connection() -> SqlConnection {
     pool.get().expect("Error connecting to database")
 }
 
-pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
+pub fn get_registered_lock_hashes() -> Result<(Vec<[u8; 32]>, u64), Error> {
     let conn = &establish_connection();
-    register_cota_kv_pairs
+    let lock_hashes = register_cota_kv_pairs
         .select(lock_hash)
         .load::<String>(conn)
         .map_or_else(
@@ -34,7 +36,9 @@ pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
                 Err(Error::DatabaseQueryError(e.to_string()))
             },
             |registries| Ok(parse_registry_cota_nft(registries)),
-        )
+        )?;
+    let block_height = get_syncer_tip_block_number_with_conn(conn)?;
+    Ok((lock_hashes, block_height))
 }
 
 pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<bool, Error> {
@@ -49,6 +53,16 @@ pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<bool, 
             Error::DatabaseQueryError(e.to_string())
         })?;
     Ok(!registries.is_empty())
+}
+
+fn get_syncer_tip_block_number_with_conn(conn: &SqlConnection) -> Result<u64, Error> {
+    check_infos
+        .select(block_number)
+        .first::<u64>(conn)
+        .map_err(|e| {
+            error!("Query block number error: {}", e.to_string());
+            Error::DatabaseQueryError(e.to_string())
+        })
 }
 
 fn parse_registry_cota_nft(registries: Vec<String>) -> Vec<[u8; 32]> {

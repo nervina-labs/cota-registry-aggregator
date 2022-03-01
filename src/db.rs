@@ -27,16 +27,29 @@ fn establish_connection() -> SqlConnection {
 
 pub fn get_registered_lock_hashes() -> Result<(Vec<[u8; 32]>, u64), Error> {
     let conn = &establish_connection();
-    let lock_hashes = register_cota_kv_pairs
-        .select(lock_hash)
-        .load::<String>(conn)
-        .map_or_else(
-            |e| {
-                error!("Query registry error: {}", e.to_string());
-                Err(Error::DatabaseQueryError(e.to_string()))
-            },
-            |registries| Ok(parse_registry_cota_nft(registries)),
-        )?;
+    const PAGE_SIZE: i64 = 1000;
+    let mut lock_hashes: Vec<[u8; 32]> = Vec::new();
+    let mut page: i64 = 0;
+    loop {
+        let lock_hashes_page = register_cota_kv_pairs
+            .select(lock_hash)
+            .limit(PAGE_SIZE)
+            .offset(PAGE_SIZE * page)
+            .load::<String>(conn)
+            .map_or_else(
+                |e| {
+                    error!("Query registry error: {}", e.to_string());
+                    Err(Error::DatabaseQueryError(e.to_string()))
+                },
+                |registries| Ok(parse_registry_cota_nft(registries)),
+            )?;
+        let length = lock_hashes_page.len();
+        lock_hashes.extend(lock_hashes_page);
+        if length < (PAGE_SIZE as usize) {
+            break;
+        }
+        page += 1;
+    }
     let block_height = get_syncer_tip_block_number_with_conn(conn)?;
     Ok((lock_hashes, block_height))
 }

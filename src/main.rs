@@ -1,17 +1,33 @@
-use jsonrpc_http_server::jsonrpc_core::{IoHandler, Value, Params};
+#[macro_use]
+extern crate diesel;
+extern crate dotenv;
+
+use crate::api::register_rpc;
+use jsonrpc_http_server::jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
+use log::info;
+
+mod api;
+mod db;
+mod error;
+mod schema;
+mod smt;
+mod utils;
 
 fn main() {
+    env_logger::Builder::from_default_env()
+        .format_timestamp(Some(env_logger::fmt::TimestampPrecision::Millis))
+        .init();
+
     let mut io = IoHandler::default();
-    io.add_method("register_compact_nft", |_params: Params| async move {
-        println!("params: {:?}", _params);
-        Ok(Value::String("register compact nft".to_owned()))
-    });
+    io.add_method("register_cota_cells", register_rpc);
 
     let server = ServerBuilder::new(io)
         .threads(3)
-        .start_http(&"127.0.0.1:3030".parse().unwrap())
+        .start_http(&"0.0.0.0:3050".parse().unwrap())
         .unwrap();
+
+    info!("Registry cota aggregator server start");
 
     server.wait();
 }

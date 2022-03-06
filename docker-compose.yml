@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+
+  cota-registry-aggregator:
+    container_name: cota-registry-aggregator
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - '.:/app'
+    ports:
+      - "3050:3050"

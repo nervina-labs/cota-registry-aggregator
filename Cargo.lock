@@ -51,9 +51,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "backtrace"
-version = "0.3.63"
+version = "0.3.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "321629d8ba6513061f26707241fa9bc89524ff1cd7a915a97ef0c62c666ce1b6"
+checksum = "5e121dee8023ce33ab248d9ce1493df03c3b38a659b240096fcbd7048ff9c31f"
 dependencies = [
  "addr2line",
  "cc",
@@ -297,10 +297,10 @@ dependencies = [
 [[package]]
 name = "cota-smt"
 version = "0.1.0"
-source = "git+https://github.com/nervina-labs/cota-smt?branch=develop#ea47402db6f00f7a93c7e65515d2606dc0c4acef"
+source = "git+https://github.com/nervina-labs/cota-smt?tag=0.1.0#d4491021491c5eabd1c0a4c435f5009c8126254d"
 dependencies = [
  "blake2b-ref 0.3.0",
- "cfg-if 0.1.10",
+ "cfg-if 1.0.0",
  "ckb-types",
  "sparse-merkle-tree",
 ]

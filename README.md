@@ -96,7 +96,10 @@ http://localhost:3050
 ```shell
 {
     "jsonrpc":"2.0",
-    "result": false,
+    "result":{
+        "block_number":4735284,
+        "registered":false
+    },
     "id":2
 }
 ```

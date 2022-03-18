@@ -54,7 +54,7 @@ pub fn get_registered_lock_hashes() -> Result<(Vec<[u8; 32]>, u64), Error> {
     Ok((lock_hashes, block_height))
 }
 
-pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<bool, Error> {
+pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<(bool, u64), Error> {
     let conn = &establish_connection();
     let lock_hash_vec: Vec<String> = lock_hashes.iter().map(|hash| hex::encode(hash)).collect();
     let lock_count = lock_hash_vec.len() as i64;
@@ -66,7 +66,9 @@ pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<bool, 
             error!("Query registry error: {}", e.to_string());
             Error::DatabaseQueryError(e.to_string())
         })?;
-    Ok(registry_count == lock_count)
+    let block_height = get_syncer_tip_block_number_with_conn(conn)?;
+    let registered = registry_count == lock_count;
+    Ok((registered, block_height))
 }
 
 fn get_syncer_tip_block_number_with_conn(conn: &SqlConnection) -> Result<u64, Error> {

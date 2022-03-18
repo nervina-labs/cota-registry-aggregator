@@ -2,7 +2,7 @@
 extern crate diesel;
 extern crate dotenv;
 
-use crate::api::register_rpc;
+use crate::api::{check_registered_rpc, register_rpc};
 use jsonrpc_http_server::jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use log::info;
@@ -21,6 +21,7 @@ fn main() {
 
     let mut io = IoHandler::default();
     io.add_method("register_cota_cells", register_rpc);
+    io.add_method("check_registered_lock_hashes", check_registered_rpc);
 
     let server = ServerBuilder::new(io)
         .threads(3)

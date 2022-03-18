@@ -76,3 +76,27 @@ http://localhost:3050
     "id":2
 }
 ```
+
+- check_registered_lock_hashes
+
+> When any lock hash has not been registered, the result will be false.
+
+```shell
+echo '{
+    "id": 2,
+    "jsonrpc": "2.0",
+    "method": "check_registered_lock_hashes",
+    "params": ["0x6a8f45a094cbe050d1a612924901b11edc1bce28c0fd8d96cdc8779889f28aa8", "0xbe30bcf4cfc2203cb7bf53b111cae4ced9af8674f088f8ea54b3efb76a5a4050"]
+}' \
+| tr -d '\n' \
+| curl -H 'content-type: application/json' -d @- \
+http://localhost:3050
+```
+
+```shell
+{
+    "jsonrpc":"2.0",
+    "result": false,
+    "id":2
+}
+```

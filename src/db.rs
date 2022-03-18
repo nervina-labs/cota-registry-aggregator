@@ -57,15 +57,16 @@ pub fn get_registered_lock_hashes() -> Result<(Vec<[u8; 32]>, u64), Error> {
 pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<bool, Error> {
     let conn = &establish_connection();
     let lock_hash_vec: Vec<String> = lock_hashes.iter().map(|hash| hex::encode(hash)).collect();
-    let registries = register_cota_kv_pairs
-        .select(lock_hash)
+    let lock_count = lock_hash_vec.len() as i64;
+    let registry_count = register_cota_kv_pairs
         .filter(lock_hash.eq_any(lock_hash_vec))
-        .load::<String>(conn)
+        .count()
+        .get_result::<i64>(conn)
         .map_err(|e| {
             error!("Query registry error: {}", e.to_string());
             Error::DatabaseQueryError(e.to_string())
         })?;
-    Ok(!registries.is_empty())
+    Ok(registry_count == lock_count)
 }
 
 fn get_syncer_tip_block_number_with_conn(conn: &SqlConnection) -> Result<u64, Error> {

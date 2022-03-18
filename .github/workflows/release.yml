@@ -41,6 +41,10 @@ jobs:
         run: RUSTFLAGS='-L/usr/local/opt/mysql-client/lib' cargo install diesel_cli --no-default-features --features mysql
         if: matrix.os == 'macos-11'
 
+      - name: Install linux dependencies (libmysqlclient20)
+        run: apt-get update && apt-get install mysql-server
+        if: matrix.os == 'ubuntu-18.04'
+
       - name: Build
         run: RUSTFLAGS='-L/usr/local/opt/mysql-client/lib' cargo build --verbose --release
 

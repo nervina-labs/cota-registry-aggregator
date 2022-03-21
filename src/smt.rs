@@ -14,7 +14,7 @@ pub fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<Map<String, V
     let mut smt = SMT::default();
     let update_leaves_count = lock_hashes.len();
 
-    if check_lock_hashes_registered(lock_hashes.clone())? {
+    if check_lock_hashes_registered(lock_hashes.clone())?.0 {
         return Err(Error::LockHashHasRegistered);
     }
 

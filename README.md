@@ -1,5 +1,8 @@
 # cota-registry-aggregator
 
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/nervina-labs/cota-registry-aggregator/blob/develop/LICENSE)
+[![CI](https://github.com/nervina-labs/cota-registry-aggregator/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/nervina-labs/cota-registry-aggregator/actions)
+
 The registry aggregator service of [CoTA](https://talk.nervos.org/t/rfc-cota-a-compact-token-aggregator-standard-for-extremely-low-cost-nfts-and-fts/6338)
 
 [CoTA Docs](https://developer.mibao.net/docs/develop/cota/overview)

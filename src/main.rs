@@ -10,6 +10,7 @@ use log::info;
 mod api;
 mod db;
 mod error;
+mod indexer;
 mod schema;
 mod smt;
 mod utils;

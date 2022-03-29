@@ -25,7 +25,7 @@ fn establish_connection() -> SqlConnection {
     pool.get().expect("Error connecting to database")
 }
 
-pub fn get_registered_lock_hashes() -> Result<(Vec<[u8; 32]>, u64), Error> {
+pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
     let conn = &establish_connection();
     const PAGE_SIZE: i64 = 1000;
     let mut lock_hashes: Vec<[u8; 32]> = Vec::new();
@@ -50,8 +50,13 @@ pub fn get_registered_lock_hashes() -> Result<(Vec<[u8; 32]>, u64), Error> {
         }
         page += 1;
     }
+    Ok(lock_hashes)
+}
+
+pub fn get_block_number() -> Result<u64, Error> {
+    let conn = &establish_connection();
     let block_height = get_syncer_tip_block_number_with_conn(conn)?;
-    Ok((lock_hashes, block_height))
+    Ok(block_height)
 }
 
 pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<(bool, u64), Error> {

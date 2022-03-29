@@ -14,6 +14,15 @@ pub enum Error {
 
     #[fail(display = "Database '{}' query error", _0)]
     DatabaseQueryError(String),
+
+    #[fail(display = "'{}' SMT error", _0)]
+    SMTError(String),
+
+    #[fail(display = "CKB Indexer error: {}", _0)]
+    CKBIndexerError(String),
+
+    #[fail(display = "'{}' RocksDB error", _0)]
+    RocksDBError(String),
 }
 
 impl Error {
@@ -24,7 +33,10 @@ impl Error {
                 msg
             ),
             Self::LockHashHasRegistered => "The lock_hash has registered".to_string(),
+            Self::CKBIndexerError(msg) => format!("CKB Indexer error: {}", msg),
             Self::DatabaseQueryError(_) => "Internal error".to_string(),
+            Self::SMTError(_) => "Internal error".into(),
+            Self::RocksDBError(_) => "Internal error".into(),
         }
     }
 }

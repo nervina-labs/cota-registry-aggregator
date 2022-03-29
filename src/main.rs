@@ -10,6 +10,7 @@ use log::info;
 mod api;
 mod db;
 mod error;
+mod indexer;
 mod schema;
 mod smt;
 mod utils;
@@ -28,7 +29,11 @@ fn main() {
         .start_http(&"0.0.0.0:3050".parse().unwrap())
         .unwrap();
 
-    info!("Registry cota aggregator server start");
+    let version = env!("CARGO_PKG_VERSION");
+    info!(
+        "{}",
+        format!("Registry cota aggregator v{} server start", version)
+    );
 
     server.wait();
 }

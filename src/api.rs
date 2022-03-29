@@ -3,8 +3,10 @@ use crate::smt::entry::generate_registry_smt;
 use crate::utils::parse_request_param;
 use jsonrpc_http_server::jsonrpc_core::serde_json::{Map, Number};
 use jsonrpc_http_server::jsonrpc_core::{Error, Params, Value};
+use log::info;
 
 pub async fn register_rpc(params: Params) -> Result<Value, Error> {
+    info!("Register cota cells request: {:?}", params);
     let registries: Vec<Value> = Params::parse(params)?;
     let lock_hashes = parse_request_param::<32>(registries).map_err(|err| err.into())?;
     let (root_hash, registry_entry) = generate_registry_smt(lock_hashes)
@@ -25,6 +27,7 @@ pub async fn register_rpc(params: Params) -> Result<Value, Error> {
 }
 
 pub async fn check_registered_rpc(params: Params) -> Result<Value, Error> {
+    info!("Check registered request: {:?}", params);
     let registries: Vec<Value> = Params::parse(params)?;
     let lock_hashes = parse_request_param::<32>(registries).map_err(|err| err.into())?;
     let (registered, block_height) =

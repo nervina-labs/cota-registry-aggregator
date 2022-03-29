@@ -30,6 +30,8 @@ WORKDIR /app
 ENV RUST_LOG info
 ENV DATABASE_URL mysql://root:password@localhost:3306/db_name
 ENV MAX_POOL 20
+ENV CKB_INDEXER http://localhost:8116
+ENV IS_MAINNET false
 
 EXPOSE 3050
 

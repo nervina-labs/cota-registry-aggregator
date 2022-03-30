@@ -55,6 +55,13 @@ docker run -d -p 3050:3050 cota-registry-aggregator:latest
 docker-compose up -d --build
 ```
 
+### Public cota registry aggregator rpc url as blow can be used to develop and test
+
+```
+testnet:
+https://cota.nervina.dev/registry-aggregator
+```
+
 ### APIs
 
 - register_cota_cells

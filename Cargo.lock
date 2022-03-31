@@ -407,6 +407,7 @@ dependencies = [
  "failure",
  "hex",
  "jsonrpc-http-server",
+ "lazy_static",
  "log",
  "molecule",
  "openssl",

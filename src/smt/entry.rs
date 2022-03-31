@@ -10,13 +10,15 @@ use cota_smt::registry::{
 use cota_smt::smt::H256;
 use log::info;
 
-pub async fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<(String, String), Error> {
+pub async fn generate_registry_smt(
+    db: &CotaRocksDB,
+    lock_hashes: Vec<[u8; 32]>,
+) -> Result<(String, String), Error> {
     let update_leaves_count = lock_hashes.len();
     if check_lock_hashes_registered(lock_hashes.clone())?.0 {
         return Err(Error::LockHashHasRegistered);
     }
-    let db = CotaRocksDB::default();
-    let mut smt = generate_history_smt(&db).await?;
+    let mut smt = generate_history_smt(db).await?;
 
     let mut update_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);
     let mut previous_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);

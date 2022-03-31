@@ -1,7 +1,8 @@
 use crate::db::check_lock_hashes_registered;
 use crate::error::Error;
-use crate::smt::db::cota_db::CotaRocksDB;
+use crate::smt::db::db::RocksDB;
 use crate::smt::smt::{generate_history_smt, RootSaver};
+use crate::smt::transaction::store_transaction::StoreTransaction;
 use cota_smt::common::{Byte32, BytesBuilder};
 use cota_smt::molecule::prelude::*;
 use cota_smt::registry::{
@@ -11,14 +12,15 @@ use cota_smt::smt::H256;
 use log::info;
 
 pub async fn generate_registry_smt(
-    db: &CotaRocksDB,
+    db: &RocksDB,
     lock_hashes: Vec<[u8; 32]>,
 ) -> Result<(String, String), Error> {
     let update_leaves_count = lock_hashes.len();
     if check_lock_hashes_registered(lock_hashes.clone())?.0 {
         return Err(Error::LockHashHasRegistered);
     }
-    let mut smt = generate_history_smt(db).await?;
+    let transaction = StoreTransaction::new(db.transaction());
+    let mut smt = generate_history_smt(&transaction).await?;
 
     let mut update_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);
     let mut previous_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);

@@ -1,12 +1,12 @@
 use crate::db::{check_lock_hashes_registered, get_block_number};
-use crate::smt::db::cota_db::CotaRocksDB;
+use crate::smt::db::db::RocksDB;
 use crate::smt::entry::generate_registry_smt;
 use crate::utils::parse_request_param;
 use jsonrpc_http_server::jsonrpc_core::serde_json::{Map, Number};
 use jsonrpc_http_server::jsonrpc_core::{Error, Params, Value};
 use log::info;
 
-pub async fn register_rpc(params: Params, db: &CotaRocksDB) -> Result<Value, Error> {
+pub async fn register_rpc(params: Params, db: &RocksDB) -> Result<Value, Error> {
     info!("Register cota cells request: {:?}", params);
     let registries: Vec<Value> = Params::parse(params)?;
     let lock_hashes = parse_request_param::<32>(registries).map_err(|err| err.into())?;

@@ -40,7 +40,7 @@ Then put the `RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib'` before `cargo bu
 ### Release
 
 ```shell
-RUST_LOG=info DATABASE_URL=mysql://root:passport@localhost:3306/db_name ./target/release/cota-registry-aggregator
+RUST_LOG=info DATABASE_URL=mysql://root:passport@localhost:3306/db_name CKB_INDEXER=http://localhost:8116 ./target/release/cota-registry-aggregator
 ```
 
 
@@ -53,6 +53,13 @@ docker run -d -p 3050:3050 cota-registry-aggregator:latest
 
 # or
 docker-compose up -d --build
+```
+
+### Public cota registry aggregator rpc url as blow can be used to develop and test
+
+```
+testnet:
+https://cota.nervina.dev/registry-aggregator
 ```
 
 ### APIs

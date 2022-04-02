@@ -1,16 +1,14 @@
 use crate::error::Error;
-use crate::smt::db::db::RocksDB;
 use crate::smt::db::schema::Col;
+use crate::smt::db::transaction::RocksDBTransaction;
 
-pub struct CotaRocksDB {
-    pub(crate) inner: RocksDB,
+pub struct StoreTransaction {
+    pub(crate) inner: RocksDBTransaction,
 }
 
-impl CotaRocksDB {
-    pub fn default() -> Self {
-        CotaRocksDB {
-            inner: RocksDB::default().expect("RocksDB create error"),
-        }
+impl StoreTransaction {
+    pub fn new(inner: RocksDBTransaction) -> Self {
+        StoreTransaction { inner }
     }
 
     pub fn get(&self, col: Col, key: &[u8]) -> Option<Box<[u8]>> {
@@ -26,5 +24,9 @@ impl CotaRocksDB {
 
     pub fn delete(&self, col: Col, key: &[u8]) -> Result<(), Error> {
         self.inner.delete(col, key)
+    }
+
+    pub fn commit(&self) -> Result<(), Error> {
+        self.inner.commit()
     }
 }

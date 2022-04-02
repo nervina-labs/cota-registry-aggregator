@@ -1,11 +1,11 @@
 use crate::db::get_registered_lock_hashes;
 use crate::error::Error;
 use crate::indexer::index::get_registry_smt_root;
-use crate::smt::db::cota_db::CotaRocksDB;
 use crate::smt::db::schema::{
     COLUMN_SMT_BRANCH, COLUMN_SMT_LEAF, COLUMN_SMT_ROOT, COLUMN_SMT_TEMP_LEAVES,
 };
 use crate::smt::store::smt_store::SMTStore;
+use crate::smt::transaction::store_transaction::StoreTransaction;
 use chrono::prelude::*;
 use cota_smt::smt::{Blake2bHasher, H256};
 use log::debug;
@@ -25,18 +25,21 @@ impl<'a> RootSaver for CotaSMT<'a> {
         if !leaves.is_empty() {
             self.store().insert_leaves(leaves)?;
         }
+        self.store().commit()?;
         debug!("Save latest smt root: {:?} and leaves", self.root());
         Ok(())
     }
 }
 
-pub async fn generate_history_smt<'a>(db: &'a CotaRocksDB) -> Result<CotaSMT<'a>, Error> {
+pub async fn generate_history_smt<'a>(
+    transaction: &'a StoreTransaction,
+) -> Result<CotaSMT<'a>, Error> {
     let smt_store = SMTStore::new(
         COLUMN_SMT_LEAF,
         COLUMN_SMT_BRANCH,
         COLUMN_SMT_ROOT,
         COLUMN_SMT_TEMP_LEAVES,
-        db,
+        transaction,
     );
     let root = smt_store
         .get_root()

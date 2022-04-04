@@ -7,7 +7,7 @@ edition = "2018"
 jsonrpc-http-server = "18.0.0"
 env_logger = "0.9"
 log = {version = "0.4", features = ["release_max_level_debug", "max_level_debug"]}
-rocksdb = { package = "ckb-rocksdb", version = "=0.16.1", features = ["snappy"] }
+rocksdb = { package = "ckb-rocksdb", version = "=0.16.2", features = ["snappy"] }
 hex = "0.4"
 failure = "0.1.8"
 lazy_static = "1.4"

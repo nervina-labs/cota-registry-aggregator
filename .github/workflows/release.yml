@@ -72,7 +72,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ env.RELEASE_BIN }} ${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_VERSION }}
           files: |
             ./artifacts/${{ env.RELEASE_BIN }}-linux-x86_64.tar.gz
 #            ./artifacts/${{ env.RELEASE_BIN }}-mac-x86_64.zip

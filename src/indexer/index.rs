@@ -48,9 +48,7 @@ pub async fn get_registry_smt_root() -> Result<Option<Vec<u8>>, Error> {
         }
     }?;
     if result.objects.is_empty() {
-        return Err(Error::CKBIndexerError(
-            "Registry live cells should not empty".to_owned(),
-        ));
+        return Ok(None);
     }
     let cell_data = result.objects.first().unwrap().output_data.as_bytes();
     match cell_data.len() {

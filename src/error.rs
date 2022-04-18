@@ -34,9 +34,9 @@ impl Error {
             ),
             Self::LockHashHasRegistered => "The lock_hash has registered".to_string(),
             Self::CKBIndexerError(msg) => format!("CKB Indexer error: {}", msg),
-            Self::DatabaseQueryError(_) => "Internal error".to_string(),
-            Self::SMTError(_) => "Internal error".into(),
-            Self::RocksDBError(_) => "Internal error".into(),
+            Self::DatabaseQueryError(msg) => format!("Database query error: {}", msg),
+            Self::SMTError(msg) => format!("SMT error: {}", msg),
+            Self::RocksDBError(msg) => format!("RocksDB error: {}", msg),
         }
     }
 }

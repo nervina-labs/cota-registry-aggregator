@@ -3,7 +3,9 @@ extern crate diesel;
 extern crate dotenv;
 
 use crate::api::{check_registered_rpc, register_rpc};
+use crate::db::{init_connection_pool, SqlConnectionPool};
 use crate::smt::db::db::RocksDB;
+use dotenv::dotenv;
 use jsonrpc_http_server::jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use lazy_static::lazy_static;
@@ -18,10 +20,12 @@ mod smt;
 mod utils;
 
 lazy_static! {
-    static ref DB: RocksDB = RocksDB::default().expect("Rocksdb open error");
+    static ref DB: RocksDB = RocksDB::default().expect("RocksDB open error");
+    static ref POOL: SqlConnectionPool = init_connection_pool();
 }
 
 fn main() {
+    dotenv().ok();
     env_logger::Builder::from_default_env()
         .format_timestamp(Some(env_logger::fmt::TimestampPrecision::Millis))
         .init();

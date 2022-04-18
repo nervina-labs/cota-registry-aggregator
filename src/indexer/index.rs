@@ -1,6 +1,5 @@
 use crate::error::Error;
 use ckb_jsonrpc_types::{BlockNumber, CellOutput, JsonBytes, OutPoint, Uint32};
-use dotenv::dotenv;
 use jsonrpc_http_server::jsonrpc_core;
 use serde::Deserialize;
 use serde_json::{from_str, json, Map, Value};
@@ -14,8 +13,6 @@ const MAINNET_REGISTRY_COTA_CODE_HASH: &str =
 const MAINNET_REGISTRY_COTA_ARGS: &str = "0x563631b49cee549f3585ab4dde5f9d590f507f1f";
 
 pub async fn get_registry_smt_root() -> Result<Option<Vec<u8>>, Error> {
-    dotenv().ok();
-
     let ckb_indexer_url = env::var("CKB_INDEXER")
         .map_err(|_e| Error::CKBIndexerError("CKB_INDEXER must be set".to_owned()))?;
 
@@ -48,9 +45,7 @@ pub async fn get_registry_smt_root() -> Result<Option<Vec<u8>>, Error> {
         }
     }?;
     if result.objects.is_empty() {
-        return Err(Error::CKBIndexerError(
-            "Registry live cells should not empty".to_owned(),
-        ));
+        return Ok(None);
     }
     let cell_data = result.objects.first().unwrap().output_data.as_bytes();
     match cell_data.len() {
@@ -63,8 +58,6 @@ pub async fn get_registry_smt_root() -> Result<Option<Vec<u8>>, Error> {
 }
 
 fn generate_params() -> Result<Value, Error> {
-    dotenv().ok();
-
     let is_mainnet: bool = match env::var("IS_MAINNET") {
         Ok(mainnet) => from_str::<bool>(&mainnet).unwrap(),
         Err(_e) => false,

@@ -1,4 +1,4 @@
-use crate::db::{check_lock_hashes_registered, get_block_number};
+use crate::db::{check_lock_hashes_registered, get_syncer_tip_block_number};
 use crate::smt::db::db::RocksDB;
 use crate::smt::entry::generate_registry_smt;
 use crate::utils::parse_request_param;
@@ -13,7 +13,7 @@ pub async fn register_rpc(params: Params, db: &RocksDB) -> Result<Value, Error> 
     let (root_hash, registry_entry) = generate_registry_smt(db, lock_hashes)
         .await
         .map_err(|err| err.into())?;
-    let block_number = get_block_number().map_err(|err| err.into())?;
+    let block_number = get_syncer_tip_block_number().map_err(|err| err.into())?;
     let mut response = Map::new();
     response.insert("smt_root_hash".to_string(), Value::String(root_hash));
     response.insert(

@@ -19,9 +19,6 @@ pub async fn generate_registry_smt(
     if check_lock_hashes_registered(lock_hashes.clone())?.0 {
         return Err(Error::LockHashHasRegistered);
     }
-    let transaction = StoreTransaction::new(db.transaction());
-    let mut smt = generate_history_smt(&transaction).await?;
-
     let mut update_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);
     let mut previous_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);
     for lock_hash in lock_hashes {
@@ -29,11 +26,16 @@ pub async fn generate_registry_smt(
         let value: H256 = H256::from([255u8; 32]);
         update_leaves.push((key, value));
         previous_leaves.push((key, H256::zero()));
-        smt.update(key, value).expect("SMT update leave error");
     }
-    let root_hash = hex::encode(smt.root().as_slice());
-    smt.save_root_and_leaves(previous_leaves)?;
 
+    let transaction = StoreTransaction::new(db.transaction());
+    let mut smt = generate_history_smt(&transaction).await?;
+    smt.update_all(update_leaves.clone())
+        .expect("SMT update leave error");
+    smt.save_root_and_leaves(previous_leaves)?;
+    transaction.commit()?;
+
+    let root_hash = hex::encode(smt.root().as_slice());
     info!("registry_smt_root_hash: {:?}", root_hash);
 
     let registry_merkle_proof = smt

@@ -3,30 +3,27 @@ use crate::error::Error;
 use crate::schema::check_infos::dsl::block_number;
 use crate::schema::check_infos::dsl::check_infos;
 use crate::utils::parse_bytes_n;
-use diesel::r2d2::{self, ConnectionManager, PooledConnection};
+use crate::POOL;
+use diesel::r2d2::{self, ConnectionManager, Pool};
 use diesel::*;
-use dotenv::dotenv;
 use jsonrpc_http_server::jsonrpc_core::serde_json::from_str;
 use log::error;
 use std::env;
 
-pub type SqlConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
+pub type SqlConnectionPool = Pool<ConnectionManager<MysqlConnection>>;
 
-fn establish_connection() -> SqlConnection {
-    dotenv().ok();
-
+pub fn init_connection_pool() -> SqlConnectionPool {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
     let max: u32 = match env::var("MAX_POOL") {
         Ok(max_) => from_str::<u32>(&max_).unwrap(),
         Err(_e) => 20,
     };
-    let pool = r2d2::Pool::builder().max_size(max).build(manager).unwrap();
-    pool.get().expect("Error connecting to database")
+    r2d2::Pool::builder().max_size(max).build(manager).unwrap()
 }
 
 pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
-    let conn = &establish_connection();
+    let conn = &POOL.clone().get().expect("Mysql pool connection error");
     const PAGE_SIZE: i64 = 1000;
     let mut lock_hashes: Vec<[u8; 32]> = Vec::new();
     let mut page: i64 = 0;
@@ -53,14 +50,8 @@ pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
     Ok(lock_hashes)
 }
 
-pub fn get_block_number() -> Result<u64, Error> {
-    let conn = &establish_connection();
-    let block_height = get_syncer_tip_block_number_with_conn(conn)?;
-    Ok(block_height)
-}
-
 pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<(bool, u64), Error> {
-    let conn = &establish_connection();
+    let conn = &POOL.clone().get().expect("Mysql pool connection error");
     let lock_hash_vec: Vec<String> = lock_hashes.iter().map(|hash| hex::encode(hash)).collect();
     let lock_count = lock_hash_vec.len() as i64;
     let registry_count = register_cota_kv_pairs
@@ -71,12 +62,13 @@ pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<(bool,
             error!("Query registry error: {}", e.to_string());
             Error::DatabaseQueryError(e.to_string())
         })?;
-    let block_height = get_syncer_tip_block_number_with_conn(conn)?;
+    let block_height = get_syncer_tip_block_number()?;
     let registered = registry_count == lock_count;
     Ok((registered, block_height))
 }
 
-fn get_syncer_tip_block_number_with_conn(conn: &SqlConnection) -> Result<u64, Error> {
+pub fn get_syncer_tip_block_number() -> Result<u64, Error> {
+    let conn = &POOL.clone().get().expect("Mysql pool connection error");
     check_infos
         .select(block_number)
         .first::<u64>(conn)

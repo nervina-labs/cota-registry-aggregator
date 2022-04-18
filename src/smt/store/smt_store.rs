@@ -40,10 +40,6 @@ impl<'a> SMTStore<'a> {
         }
     }
 
-    pub fn commit(&self) -> Result<(), Error> {
-        self.store.commit()
-    }
-
     pub fn save_root(&self, root: &H256) -> Result<(), SMTError> {
         self.store
             .insert_raw(self.root_col, &REGISTRY_KEY, root.as_slice())

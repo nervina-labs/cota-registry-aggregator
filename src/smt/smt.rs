@@ -22,10 +22,7 @@ impl<'a> RootSaver for CotaSMT<'a> {
         self.store()
             .save_root(self.root())
             .expect("Save smt root error");
-        if !leaves.is_empty() {
-            self.store().insert_leaves(leaves)?;
-        }
-        self.store().commit()?;
+        self.store().insert_leaves(leaves)?;
         debug!("Save latest smt root: {:?} and leaves", self.root());
         Ok(())
     }
@@ -55,10 +52,16 @@ pub async fn generate_history_smt<'a>(
     debug!("registry cell smt root: {:?}", smt_root_opt,);
     if let Some(smt_root) = smt_root_opt {
         if smt_root.as_slice() == root.as_slice() {
+            debug!("The smt leaves and root in rocksdb are right");
             return Ok(smt);
+        } else {
+            smt = reset_smt_temp_leaves(smt)?;
+            if smt_root.as_slice() == smt.root().as_slice() {
+                debug!("The smt leaves and root in rocksdb are right after reset");
+                return Ok(smt);
+            }
         }
     }
-    smt = reset_smt_temp_leaves(smt)?;
     generate_mysql_smt(smt)
 }
 

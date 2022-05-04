@@ -1,5 +1,6 @@
 use crate::db::check_lock_hashes_registered;
 use crate::error::Error;
+use crate::indexer::index::get_registry_smt_root;
 use crate::smt::db::db::RocksDB;
 use crate::smt::smt::{generate_history_smt, RootSaver};
 use crate::smt::transaction::store_transaction::StoreTransaction;
@@ -9,7 +10,14 @@ use cota_smt::registry::{
     CotaNFTRegistryEntriesBuilder, Registry, RegistryBuilder, RegistryVecBuilder,
 };
 use cota_smt::smt::H256;
+use lazy_static::lazy_static;
 use log::info;
+use parking_lot::Mutex;
+use std::sync::Arc;
+
+lazy_static! {
+    static ref SMT_LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+}
 
 pub async fn generate_registry_smt(
     db: &RocksDB,
@@ -28,12 +36,16 @@ pub async fn generate_registry_smt(
         previous_leaves.push((key, H256::zero()));
     }
 
+    let smt_root_opt = get_registry_smt_root().await?;
+
+    let lock = SMT_LOCK.lock();
     let transaction = StoreTransaction::new(db.transaction());
-    let mut smt = generate_history_smt(&transaction).await?;
+    let mut smt = generate_history_smt(&transaction, smt_root_opt)?;
     smt.update_all(update_leaves.clone())
         .expect("SMT update leave error");
     smt.save_root_and_leaves(previous_leaves)?;
     transaction.commit()?;
+    drop(lock);
 
     let root_hash = hex::encode(smt.root().as_slice());
     info!("registry_smt_root_hash: {:?}", root_hash);

@@ -1,6 +1,5 @@
 use crate::db::get_registered_lock_hashes;
 use crate::error::Error;
-use crate::indexer::index::get_registry_smt_root;
 use crate::smt::db::schema::{
     COLUMN_SMT_BRANCH, COLUMN_SMT_LEAF, COLUMN_SMT_ROOT, COLUMN_SMT_TEMP_LEAVES,
 };
@@ -28,8 +27,9 @@ impl<'a> RootSaver for CotaSMT<'a> {
     }
 }
 
-pub async fn generate_history_smt<'a>(
+pub fn generate_history_smt<'a>(
     transaction: &'a StoreTransaction,
+    smt_root_opt: Option<Vec<u8>>,
 ) -> Result<CotaSMT<'a>, Error> {
     let smt_store = SMTStore::new(
         COLUMN_SMT_LEAF,
@@ -48,7 +48,6 @@ pub async fn generate_history_smt<'a>(
     if root == H256::zero() {
         return generate_mysql_smt(smt);
     }
-    let smt_root_opt = get_registry_smt_root().await?;
     debug!("registry cell smt root: {:?}", smt_root_opt,);
     if let Some(smt_root) = smt_root_opt {
         if smt_root.as_slice() == root.as_slice() {

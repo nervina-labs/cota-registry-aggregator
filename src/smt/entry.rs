@@ -2,7 +2,7 @@ use crate::db::check_lock_hashes_registered;
 use crate::error::Error;
 use crate::indexer::index::get_registry_smt_root;
 use crate::smt::db::db::RocksDB;
-use crate::smt::smt::{generate_history_smt, RootSaver};
+use crate::smt::smt::{generate_history_smt, init_smt, RootSaver};
 use crate::smt::transaction::store_transaction::StoreTransaction;
 use cota_smt::common::{Byte32, BytesBuilder};
 use cota_smt::molecule::prelude::*;
@@ -12,11 +12,12 @@ use cota_smt::registry::{
 use cota_smt::smt::H256;
 use lazy_static::lazy_static;
 use log::info;
-use parking_lot::Mutex;
+use parking_lot::{Condvar, Mutex};
 use std::sync::Arc;
 
 lazy_static! {
-    static ref SMT_LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    static ref SMT_LOCK: Arc<(Mutex<bool>, Condvar)> =
+        Arc::new((Mutex::new(false), Condvar::new()));
 }
 
 pub async fn generate_registry_smt(
@@ -37,15 +38,16 @@ pub async fn generate_registry_smt(
     }
 
     let smt_root_opt = get_registry_smt_root().await?;
-
-    let lock = SMT_LOCK.lock();
     let transaction = StoreTransaction::new(db.transaction());
-    let mut smt = generate_history_smt(&transaction, smt_root_opt)?;
-    smt.update_all(update_leaves.clone())
-        .expect("SMT update leave error");
-    smt.save_root_and_leaves(previous_leaves)?;
-    transaction.commit()?;
-    drop(lock);
+    let mut smt = init_smt(&transaction)?;
+
+    with_lock(|| {
+        generate_history_smt(&mut smt, smt_root_opt)?;
+        smt.update_all(update_leaves.clone())
+            .map_err(|e| Error::SMTError(e.to_string()))?;
+        smt.save_root_and_leaves(previous_leaves.clone())?;
+        transaction.commit()
+    })?;
 
     let root_hash = hex::encode(smt.root().as_slice());
     info!("registry_smt_root_hash: {:?}", root_hash);
@@ -84,4 +86,30 @@ pub async fn generate_registry_smt(
     let registry_entry = hex::encode(registry_entries.as_slice());
 
     Ok((root_hash, registry_entry))
+}
+
+fn with_lock<F>(mut operator: F) -> Result<(), Error>
+where
+    F: FnMut() -> Result<(), Error>,
+{
+    let &(ref lock, ref cond) = &*Arc::clone(&SMT_LOCK);
+    {
+        let mut pending = lock.lock();
+        while *pending {
+            cond.wait(&mut pending);
+        }
+        *pending = true;
+    }
+    let unlock = || {
+        let mut pending = lock.lock();
+        *pending = false;
+        cond.notify_all();
+    };
+
+    operator().map_err(|err| {
+        unlock();
+        err
+    })?;
+    unlock();
+    Ok(())
 }

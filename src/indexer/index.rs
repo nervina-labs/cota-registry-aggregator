@@ -12,7 +12,7 @@ const MAINNET_REGISTRY_COTA_CODE_HASH: &str =
     "0x90ca618be6c15f5857d3cbd09f9f24ca6770af047ba9ee70989ec3b229419ac7";
 const MAINNET_REGISTRY_COTA_ARGS: &str = "0x563631b49cee549f3585ab4dde5f9d590f507f1f";
 
-pub async fn get_registry_smt_root() -> Result<Option<Vec<u8>>, Error> {
+pub async fn get_registry_smt_root() -> Result<Option<[u8; 32]>, Error> {
     let ckb_indexer_url = env::var("CKB_INDEXER")
         .map_err(|_e| Error::CKBIndexerError("CKB_INDEXER must be set".to_owned()))?;
 
@@ -50,7 +50,11 @@ pub async fn get_registry_smt_root() -> Result<Option<Vec<u8>>, Error> {
     let cell_data = result.objects.first().unwrap().output_data.as_bytes();
     match cell_data.len() {
         1 => Ok(None),
-        33 => Ok(Some(cell_data[1..].to_vec())),
+        33 => {
+            let mut ret = [0u8; 32];
+            ret.copy_from_slice(&cell_data[1..]);
+            Ok(Some(ret))
+        }
         _ => Err(Error::CKBIndexerError(
             "Registry cell data length error".to_owned(),
         )),

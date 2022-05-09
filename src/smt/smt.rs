@@ -27,10 +27,7 @@ impl<'a> RootSaver for CotaSMT<'a> {
     }
 }
 
-pub fn generate_history_smt<'a>(
-    transaction: &'a StoreTransaction,
-    smt_root_opt: Option<Vec<u8>>,
-) -> Result<CotaSMT<'a>, Error> {
+pub fn init_smt<'a>(transaction: &'a StoreTransaction) -> Result<CotaSMT<'a>, Error> {
     let smt_store = SMTStore::new(
         COLUMN_SMT_LEAF,
         COLUMN_SMT_BRANCH,
@@ -43,8 +40,14 @@ pub fn generate_history_smt<'a>(
         .map_err(|_e| Error::SMTError("Get smt root".to_string()))?
         .unwrap_or_default();
     debug!("rocksdb smt root: {:?}", root,);
-    let mut smt: CotaSMT = CotaSMT::new(root, smt_store);
+    Ok(CotaSMT::new(root, smt_store))
+}
 
+pub fn generate_history_smt<'a>(
+    smt: &mut CotaSMT<'a>,
+    smt_root_opt: Option<[u8; 32]>,
+) -> Result<(), Error> {
+    let root = *smt.root();
     if root == H256::zero() {
         return generate_mysql_smt(smt);
     }
@@ -52,19 +55,19 @@ pub fn generate_history_smt<'a>(
     if let Some(smt_root) = smt_root_opt {
         if smt_root.as_slice() == root.as_slice() {
             debug!("The smt leaves and root in rocksdb are right");
-            return Ok(smt);
+            return Ok(());
         } else {
-            smt = reset_smt_temp_leaves(smt)?;
+            reset_smt_temp_leaves(smt)?;
             if smt_root.as_slice() == smt.root().as_slice() {
                 debug!("The smt leaves and root in rocksdb are right after reset");
-                return Ok(smt);
+                return Ok(());
             }
         }
     }
     generate_mysql_smt(smt)
 }
 
-fn generate_mysql_smt<'a>(mut smt: CotaSMT<'a>) -> Result<CotaSMT<'a>, Error> {
+fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     let start_time = Local::now().timestamp_millis();
     let registered_lock_hashes = get_registered_lock_hashes()?;
     if !registered_lock_hashes.is_empty() {
@@ -76,15 +79,15 @@ fn generate_mysql_smt<'a>(mut smt: CotaSMT<'a>) -> Result<CotaSMT<'a>, Error> {
     }
     let diff_time = (Local::now().timestamp_millis() - start_time) as f64 / 1000f64;
     debug!("Push registry history leaves to smt: {}s", diff_time);
-    Ok(smt)
+    Ok(())
 }
 
-fn reset_smt_temp_leaves<'a>(mut smt: CotaSMT<'a>) -> Result<CotaSMT<'a>, Error> {
+fn reset_smt_temp_leaves<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     let leaves_opt = smt.store().get_leaves()?;
     if let Some(leaves) = leaves_opt {
         smt.update_all(leaves)
             .expect("SMT update temp leaves error");
     }
     debug!("Reset temp leaves successfully");
-    Ok(smt)
+    Ok(())
 }

@@ -38,8 +38,8 @@ pub async fn generate_registry_smt(
     }
 
     let smt_root_opt = get_registry_smt_root().await?;
-    let transaction = StoreTransaction::new(db.transaction());
-    let mut smt = init_smt(&transaction)?;
+    let transaction = &StoreTransaction::new(db.transaction());
+    let mut smt = init_smt(transaction)?;
 
     with_lock(|| {
         generate_history_smt(&mut smt, smt_root_opt)?;

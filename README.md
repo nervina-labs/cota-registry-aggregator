@@ -62,9 +62,16 @@ testnet:
 https://cota.nervina.dev/registry-aggregator
 ```
 
-### APIs
+## APIs
 
-- register_cota_cells
+### register_cota_cells
+  
+**Register cota cells through lock hashes**
+
+- Everyone should register cota cell before minting or transferring CoTA NFTs
+- Each address must have only one cota cell
+- The address and lock hash(32 bytes) are one-to-one correspondence
+- The RPC parameter is an array of unregistered lock hashes
 
 ```shell
 echo '{
@@ -90,9 +97,10 @@ http://localhost:3050
 }
 ```
 
-- check_registered_lock_hashes
+### check_registered_lock_hashes
 
-> When any lock hash has not been registered, the result will be false.
+- When any lock hash has not been registered, the result will be false
+- The RPC parameter is an array of unchecked lock hashes
 
 ```shell
 echo '{

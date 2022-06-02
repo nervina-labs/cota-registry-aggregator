@@ -23,10 +23,10 @@ pub fn init_connection_pool() -> SqlConnectionPool {
     r2d2::Pool::builder().max_size(max).build(manager).unwrap()
 }
 
-pub fn get_registered_lock_leaves() -> Result<Vec<(H256, H256)>, Error> {
+pub fn get_registered_lock_hashes() -> Result<Vec<H256>, Error> {
     let conn = &POOL.clone().get().expect("Mysql pool connection error");
     const PAGE_SIZE: i64 = 1000;
-    let mut leaves: Vec<(H256, H256)> = Vec::new();
+    let mut leaves: Vec<H256> = Vec::new();
     let mut page: i64 = 0;
     loop {
         let leaves_page = register_cota_kv_pairs
@@ -80,14 +80,9 @@ pub fn get_syncer_tip_block_number() -> Result<u64, Error> {
         })
 }
 
-fn parse_registry_cota_nft(registries: Vec<String>) -> Vec<(H256, H256)> {
+fn parse_registry_cota_nft(registries: Vec<String>) -> Vec<H256> {
     registries
         .into_iter()
-        .map(|registry| {
-            (
-                H256::from(parse_bytes_n::<32>(registry).unwrap()),
-                H256::from([255u8; 32]),
-            )
-        })
+        .map(|registry| H256::from(parse_bytes_n::<32>(registry).unwrap()))
         .collect()
 }

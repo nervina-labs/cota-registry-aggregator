@@ -2,7 +2,7 @@ use crate::db::check_lock_hashes_registered;
 use crate::error::Error;
 use crate::indexer::index::get_registry_smt_root;
 use crate::smt::db::db::RocksDB;
-use crate::smt::smt::{generate_history_smt, init_smt, RootSaver};
+use crate::smt::smt::{generate_history_smt, init_smt, Extension};
 use crate::smt::transaction::store_transaction::StoreTransaction;
 use cota_smt::common::{Byte32, BytesBuilder};
 use cota_smt::molecule::prelude::*;

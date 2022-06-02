@@ -8,15 +8,17 @@ use crate::smt::transaction::store_transaction::StoreTransaction;
 use chrono::prelude::*;
 use cota_smt::smt::{Blake2bHasher, H256};
 use log::debug;
+use sparse_merkle_tree::traits::Store;
 use sparse_merkle_tree::SparseMerkleTree;
 
 pub type CotaSMT<'a> = SparseMerkleTree<Blake2bHasher, H256, SMTStore<'a>>;
 
-pub trait RootSaver {
+pub trait Extension {
     fn save_root_and_leaves(&self, leaves: Vec<(H256, H256)>) -> Result<(), Error>;
+    fn is_non_existent(&self, leaf_key: &H256) -> bool;
 }
 
-impl<'a> RootSaver for CotaSMT<'a> {
+impl<'a> Extension for CotaSMT<'a> {
     fn save_root_and_leaves(&self, leaves: Vec<(H256, H256)>) -> Result<(), Error> {
         self.store()
             .save_root(self.root())
@@ -24,6 +26,13 @@ impl<'a> RootSaver for CotaSMT<'a> {
         self.store().insert_leaves(leaves)?;
         debug!("Save latest smt root: {:?} and leaves", self.root());
         Ok(())
+    }
+
+    fn is_non_existent(&self, leaf_key: &H256) -> bool {
+        if let Ok(result) = self.store().get_leaf(leaf_key) {
+            return result.is_none();
+        }
+        true
     }
 }
 
@@ -69,14 +78,21 @@ pub fn generate_history_smt<'a>(
 
 fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     let start_time = Local::now().timestamp_millis();
-    let registered_lock_hashes = get_registered_lock_hashes()?;
-    if !registered_lock_hashes.is_empty() {
-        for lock_hash in registered_lock_hashes {
-            let key: H256 = H256::from(lock_hash);
-            let value: H256 = H256::from([255u8; 32]);
-            smt.update(key, value).expect("SMT update leave error");
-        }
-    }
+    let registered_lock_hashes: Vec<H256> = get_registered_lock_hashes()?;
+    let leaves = if smt.root() == &H256::zero() {
+        registered_lock_hashes
+            .into_iter()
+            .map(|key| (key, H256::from([255u8; 32])))
+            .collect()
+    } else {
+        debug!("Compare rocksdb and mysql to get diff leaves");
+        registered_lock_hashes
+            .into_iter()
+            .filter(|key| smt.is_non_existent(&key))
+            .map(|key| (key, H256::from([255u8; 32])))
+            .collect()
+    };
+    smt.update_all(leaves).expect("SMT update leave error");
     let diff_time = (Local::now().timestamp_millis() - start_time) as f64 / 1000f64;
     debug!("Push registry history leaves to smt: {}s", diff_time);
     Ok(())

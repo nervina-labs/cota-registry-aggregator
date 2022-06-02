@@ -1,4 +1,4 @@
-use crate::db::get_registered_lock_hashes;
+use crate::db::get_registered_lock_leaves;
 use crate::error::Error;
 use crate::smt::db::schema::{
     COLUMN_SMT_BRANCH, COLUMN_SMT_LEAF, COLUMN_SMT_ROOT, COLUMN_SMT_TEMP_LEAVES,
@@ -69,14 +69,9 @@ pub fn generate_history_smt<'a>(
 
 fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     let start_time = Local::now().timestamp_millis();
-    let registered_lock_hashes = get_registered_lock_hashes()?;
-    if !registered_lock_hashes.is_empty() {
-        for lock_hash in registered_lock_hashes {
-            let key: H256 = H256::from(lock_hash);
-            let value: H256 = H256::from([255u8; 32]);
-            smt.update(key, value).expect("SMT update leave error");
-        }
-    }
+    let registered_lock_leaves: Vec<(H256, H256)> = get_registered_lock_leaves()?;
+    smt.update_all(registered_lock_leaves)
+        .expect("SMT update leave error");
     let diff_time = (Local::now().timestamp_millis() - start_time) as f64 / 1000f64;
     debug!("Push registry history leaves to smt: {}s", diff_time);
     Ok(())

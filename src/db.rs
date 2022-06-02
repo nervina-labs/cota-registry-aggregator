@@ -4,6 +4,7 @@ use crate::schema::check_infos::dsl::block_number;
 use crate::schema::check_infos::dsl::check_infos;
 use crate::utils::parse_bytes_n;
 use crate::POOL;
+use cota_smt::smt::H256;
 use diesel::r2d2::{self, ConnectionManager, Pool};
 use diesel::*;
 use jsonrpc_http_server::jsonrpc_core::serde_json::from_str;
@@ -22,13 +23,13 @@ pub fn init_connection_pool() -> SqlConnectionPool {
     r2d2::Pool::builder().max_size(max).build(manager).unwrap()
 }
 
-pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
+pub fn get_registered_lock_hashes() -> Result<Vec<H256>, Error> {
     let conn = &POOL.clone().get().expect("Mysql pool connection error");
     const PAGE_SIZE: i64 = 1000;
-    let mut lock_hashes: Vec<[u8; 32]> = Vec::new();
+    let mut leaves: Vec<H256> = Vec::new();
     let mut page: i64 = 0;
     loop {
-        let lock_hashes_page = register_cota_kv_pairs
+        let leaves_page = register_cota_kv_pairs
             .select(lock_hash)
             .limit(PAGE_SIZE)
             .offset(PAGE_SIZE * page)
@@ -40,14 +41,14 @@ pub fn get_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
                 },
                 |registries| Ok(parse_registry_cota_nft(registries)),
             )?;
-        let length = lock_hashes_page.len();
-        lock_hashes.extend(lock_hashes_page);
+        let length = leaves_page.len();
+        leaves.extend(leaves_page);
         if length < (PAGE_SIZE as usize) {
             break;
         }
         page += 1;
     }
-    Ok(lock_hashes)
+    Ok(leaves)
 }
 
 pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<(bool, u64), Error> {
@@ -79,9 +80,9 @@ pub fn get_syncer_tip_block_number() -> Result<u64, Error> {
         })
 }
 
-fn parse_registry_cota_nft(registries: Vec<String>) -> Vec<[u8; 32]> {
+fn parse_registry_cota_nft(registries: Vec<String>) -> Vec<H256> {
     registries
         .into_iter()
-        .map(|registry| parse_bytes_n(registry).unwrap())
+        .map(|registry| H256::from(parse_bytes_n::<32>(registry).unwrap()))
         .collect()
 }

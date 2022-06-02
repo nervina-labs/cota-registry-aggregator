@@ -85,6 +85,7 @@ fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
             .map(|key| (key, H256::from([255u8; 32])))
             .collect()
     } else {
+        debug!("Compare rocksdb and mysql to get diff leaves");
         registered_lock_hashes
             .into_iter()
             .filter(|key| smt.is_non_existent(&key))

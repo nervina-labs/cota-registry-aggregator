@@ -43,8 +43,9 @@ Then put the `RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib'` before `cargo bu
 RUST_LOG=info DATABASE_URL=mysql://root:passport@localhost:3306/db_name CKB_INDEXER=http://localhost:8116 IS_MAINNET=false ./target/release/cota-registry-aggregator
 ```
 
-
 ### docker
+
+> The RocksDB data of SMT will be saved into `src/store.db`, so the store.db should be mounted into docker. E.g. `-v "$(pwd)":/app/store.db`
 
 ```shell
 # Build cota-aggregator images from the Dockerfile and run cota-aggregator via docker
@@ -85,6 +86,14 @@ echo '{
 http://localhost:3050
 ```
 
+#### Response
+
+```
+block_number - The latest block number of cota-nft-entries-syncer
+registry_smt_entry - The SMT registry information (origin SMT leaves, SMT proof and other information)
+smt_root_hash - The latest SMT root hash after registry
+```
+
 ```shell
 {
     "jsonrpc":"2.0",
@@ -112,6 +121,13 @@ echo '{
 | tr -d '\n' \
 | curl -H 'content-type: application/json' -d @- \
 http://localhost:3050
+```
+
+#### Response
+
+```
+block_number - The latest block number of cota-nft-entries-syncer
+registered - true for registered and false for unregistered
 ```
 
 ```shell

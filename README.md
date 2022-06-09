@@ -5,7 +5,7 @@
 
 The registry aggregator service of [CoTA](https://talk.nervos.org/t/rfc-cota-a-compact-token-aggregator-standard-for-extremely-low-cost-nfts-and-fts/6338)
 
-[CoTA Docs](https://developer.mibao.net/docs/develop/cota/overview)
+[CoTA Docs](https://developer.mibao.net/docs/cota/overview)
 
 ## Prerequisites
 
@@ -16,6 +16,7 @@ The registry aggregator service of [CoTA](https://talk.nervos.org/t/rfc-cota-a-c
 - `mysql-client` for macOS: `brew install mysql-client`
 
 If the output is as blow:
+
 ```shell
 If you need to have mysql-client first in your PATH, run:
   echo 'export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"' >> ~/.zshrc
@@ -24,6 +25,7 @@ For compilers to find mysql-client you may need to set:
   export LDFLAGS="-L/opt/homebrew/opt/mysql-client/lib"
   export CPPFLAGS="-I/opt/homebrew/opt/mysql-client/include"
 ```
+
 Then put the `RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib'` before `cargo build` and `cargo test`
 
 ## Quick Start
@@ -31,9 +33,9 @@ Then put the `RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib'` before `cargo bu
 ### Manual
 
 - Rename `.env.example` to `.env`
-    - Update the database connection string in `DATABASE_URL` key
-    - Update the ckb-indexer url string in `CKB_INDEXER`
-    - Update the miannet or testnet in `IS_MAINNET`
+  - Update the database connection string in `DATABASE_URL` key
+  - Update the ckb-indexer url string in `CKB_INDEXER`
+  - Update the miannet or testnet in `IS_MAINNET`
 - Build with release profile: `make build-release`
 - Run with release profile: `make run-release`
 
@@ -43,8 +45,9 @@ Then put the `RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib'` before `cargo bu
 RUST_LOG=info DATABASE_URL=mysql://root:passport@localhost:3306/db_name CKB_INDEXER=http://localhost:8116 IS_MAINNET=false ./target/release/cota-registry-aggregator
 ```
 
-
 ### docker
+
+> The RocksDB data of SMT will be saved into `src/store.db`, so the store.db should be mounted into docker. E.g. `-v "$(pwd)":/app/store.db`
 
 ```shell
 # Build cota-aggregator images from the Dockerfile and run cota-aggregator via docker
@@ -62,10 +65,14 @@ testnet:
 https://cota.nervina.dev/registry-aggregator
 ```
 
+## SDK
+
+[SDK](https://github.com/nervina-labs/cota-sdk-js) can help you implement RPC APIs call and build ckb transactions
+
 ## APIs
 
 ### register_cota_cells
-  
+
 **Register cota cells through lock hashes**
 
 - Everyone should register cota cell before minting or transferring CoTA NFTs
@@ -83,6 +90,14 @@ echo '{
 | tr -d '\n' \
 | curl -H 'content-type: application/json' -d @- \
 http://localhost:3050
+```
+
+#### Response
+
+```
+block_number - The latest block number of cota-nft-entries-syncer
+registry_smt_entry - The SMT registry information (origin SMT leaves, SMT proof and other information)
+smt_root_hash - The latest SMT root hash after registry
 ```
 
 ```shell
@@ -112,6 +127,13 @@ echo '{
 | tr -d '\n' \
 | curl -H 'content-type: application/json' -d @- \
 http://localhost:3050
+```
+
+#### Response
+
+```
+block_number - The latest block number of cota-nft-entries-syncer
+registered - true for registered and false for unregistered
 ```
 
 ```shell

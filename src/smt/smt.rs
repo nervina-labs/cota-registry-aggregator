@@ -1,4 +1,4 @@
-use crate::db::get_registered_lock_hashes;
+use crate::db::{check_lock_hashes_registered, get_registered_lock_hashes};
 use crate::error::Error;
 use crate::smt::db::schema::{
     COLUMN_SMT_BRANCH, COLUMN_SMT_LEAF, COLUMN_SMT_ROOT, COLUMN_SMT_TEMP_LEAVES,
@@ -79,7 +79,8 @@ pub fn generate_history_smt<'a>(
 fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     let start_time = Local::now().timestamp_millis();
     let registered_lock_hashes: Vec<H256> = get_registered_lock_hashes()?;
-    let leaves = if smt.root() == &H256::zero() {
+    let is_smt_full_leaves = smt.root() == &H256::zero() || is_temp_leaves_non_exit(smt)?;
+    let leaves = if is_smt_full_leaves {
         registered_lock_hashes
             .into_iter()
             .map(|key| (key, H256::from([255u8; 32])))
@@ -106,4 +107,14 @@ fn reset_smt_temp_leaves<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     }
     debug!("Reset temp leaves successfully");
     Ok(())
+}
+
+fn is_temp_leaves_non_exit<'a>(smt: &mut CotaSMT<'a>) -> Result<bool, Error> {
+    let leaves_opt = smt.store().get_leaves()?;
+    if let Some(leaves) = leaves_opt {
+        let lock_hashes: Vec<[u8; 32]> = leaves.into_iter().map(|leaf| leaf.0.into()).collect();
+        let is_exist = check_lock_hashes_registered(lock_hashes)?.0;
+        return Ok(!is_exist);
+    }
+    Ok(true)
 }

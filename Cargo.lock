@@ -550,7 +550,7 @@ dependencies = [
  "chrono",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
- "ckb-types 0.101.8",
+ "ckb-types 0.103.0",
  "cota-smt",
  "crc",
  "diesel",

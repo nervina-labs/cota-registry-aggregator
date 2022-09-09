@@ -1,4 +1,4 @@
-use crate::db::{check_lock_hashes_registered, get_syncer_tip_block_number};
+use crate::db::{check_lock_hashes_registered, get_syncer_tip_block_number, RegistryState};
 use crate::smt::db::db::RocksDB;
 use crate::smt::entry::generate_registry_smt;
 use crate::utils::parse_request_param;
@@ -31,10 +31,13 @@ pub async fn check_registered_rpc(params: Params) -> Result<Value, Error> {
     info!("Check registered request: {:?}", params);
     let registries: Vec<Value> = Params::parse(params)?;
     let lock_hashes = parse_request_param::<32>(registries).map_err(|err| err.into())?;
-    let (registered, block_height) =
+    let (registry_state, block_height) =
         check_lock_hashes_registered(lock_hashes).map_err(|err| err.into())?;
     let mut response = Map::new();
-    response.insert("registered".to_string(), Value::Bool(registered));
+    response.insert(
+        "registered".to_string(),
+        Value::Bool(registry_state != RegistryState::Unregister),
+    );
     response.insert(
         "block_number".to_string(),
         Value::Number(Number::from(block_height)),

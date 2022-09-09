@@ -27,9 +27,4 @@ table! {
     }
 }
 
-
-allow_tables_to_appear_in_same_query!(
-    check_infos,
-    register_cota_kv_pairs,
-    schema_migrations,
-);
+allow_tables_to_appear_in_same_query!(check_infos, register_cota_kv_pairs, schema_migrations,);

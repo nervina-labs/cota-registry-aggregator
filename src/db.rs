@@ -5,7 +5,7 @@ use crate::schema::check_infos::dsl::check_infos;
 use crate::utils::parse_bytes_n;
 use crate::POOL;
 use cota_smt::smt::H256;
-use diesel::r2d2::{self, ConnectionManager, Pool};
+use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::*;
 use jsonrpc_http_server::jsonrpc_core::serde_json::from_str;
 use log::error;
@@ -20,7 +20,7 @@ pub fn init_connection_pool() -> SqlConnectionPool {
         Ok(max_) => from_str::<u32>(&max_).unwrap(),
         Err(_e) => 20,
     };
-    r2d2::Pool::builder().max_size(max).build(manager).unwrap()
+    Pool::builder().max_size(max).build(manager).unwrap()
 }
 
 pub fn get_registered_lock_hashes() -> Result<Vec<H256>, Error> {
@@ -51,21 +51,33 @@ pub fn get_registered_lock_hashes() -> Result<Vec<H256>, Error> {
     Ok(leaves)
 }
 
-pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<(bool, u64), Error> {
+#[derive(PartialEq, Clone, Copy)]
+pub enum RegistryState {
+    Unregister,
+    WithCCID,
+    NoCCID,
+}
+pub fn check_lock_hashes_registered(
+    lock_hashes: Vec<[u8; 32]>,
+) -> Result<(RegistryState, u64), Error> {
     let conn = &POOL.clone().get().expect("Mysql pool connection error");
-    let lock_hash_vec: Vec<String> = lock_hashes.iter().map(|hash| hex::encode(hash)).collect();
-    let lock_count = lock_hash_vec.len() as i64;
-    let registry_count = register_cota_kv_pairs
+    let lock_hash_vec: Vec<String> = lock_hashes.iter().map(hex::encode).collect();
+    let ccids = register_cota_kv_pairs
+        .select(cota_cell_id)
         .filter(lock_hash.eq_any(lock_hash_vec))
-        .count()
-        .get_result::<i64>(conn)
+        .load::<u64>(conn)
         .map_err(|e| {
-            error!("Query registry error: {}", e.to_string());
+            error!("Query registry state error: {}", e.to_string());
             Error::DatabaseQueryError(e.to_string())
         })?;
     let block_height = get_syncer_tip_block_number()?;
-    let registered = registry_count == lock_count;
-    Ok((registered, block_height))
+    if ccids.len() < lock_hashes.len() {
+        Ok((RegistryState::Unregister, block_height))
+    } else if ccids.into_iter().any(|ccid| ccid == 0) {
+        Ok((RegistryState::NoCCID, block_height))
+    } else {
+        Ok((RegistryState::WithCCID, block_height))
+    }
 }
 
 pub fn get_syncer_tip_block_number() -> Result<u64, Error> {

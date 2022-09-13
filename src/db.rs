@@ -9,6 +9,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::*;
 use jsonrpc_http_server::jsonrpc_core::serde_json::from_str;
 use log::error;
+use serde::{Deserialize, Serialize};
 use std::env;
 
 pub type SqlConnectionPool = Pool<ConnectionManager<MysqlConnection>>;
@@ -23,23 +24,28 @@ pub fn init_connection_pool() -> SqlConnectionPool {
     Pool::builder().max_size(max).build(manager).unwrap()
 }
 
-pub fn get_registered_lock_hashes() -> Result<Vec<H256>, Error> {
+const PAGE_SIZE: i64 = 1000;
+#[derive(Serialize, Deserialize, Queryable)]
+struct Registry {
+    pub lock_hash: String,
+    pub ccid:      u64,
+}
+pub fn get_registered_lock_hashes_and_ccids() -> Result<Vec<(H256, u64)>, Error> {
     let conn = &POOL.clone().get().expect("Mysql pool connection error");
-    const PAGE_SIZE: i64 = 1000;
-    let mut leaves: Vec<H256> = Vec::new();
+    let mut leaves: Vec<(H256, u64)> = Vec::new();
     let mut page: i64 = 0;
     loop {
         let leaves_page = register_cota_kv_pairs
-            .select(lock_hash)
+            .select((lock_hash, cota_cell_id))
             .limit(PAGE_SIZE)
             .offset(PAGE_SIZE * page)
-            .load::<String>(conn)
+            .load::<Registry>(conn)
             .map_or_else(
                 |e| {
-                    error!("Query registry error: {}", e.to_string());
+                    error!("Query registry lock hash and ccid error: {}", e.to_string());
                     Err(Error::DatabaseQueryError(e.to_string()))
                 },
-                |registries| Ok(parse_registry_cota_nft(registries)),
+                |registries| Ok(parse_registries(registries)),
             )?;
         let length = leaves_page.len();
         leaves.extend(leaves_page);
@@ -73,7 +79,7 @@ pub fn check_lock_hashes_registered(
     let block_height = get_syncer_tip_block_number()?;
     if ccids.len() < lock_hashes.len() {
         Ok((RegistryState::Unregister, block_height))
-    } else if ccids.into_iter().any(|ccid| ccid == 0) {
+    } else if ccids.into_iter().any(|ccid| ccid == u64::MAX) {
         Ok((RegistryState::NoCCID, block_height))
     } else {
         Ok((RegistryState::WithCCID, block_height))
@@ -92,9 +98,14 @@ pub fn get_syncer_tip_block_number() -> Result<u64, Error> {
         })
 }
 
-fn parse_registry_cota_nft(registries: Vec<String>) -> Vec<H256> {
+fn parse_registries(registries: Vec<Registry>) -> Vec<(H256, u64)> {
     registries
         .into_iter()
-        .map(|registry| H256::from(parse_bytes_n::<32>(registry).unwrap()))
+        .map(|regsitry| {
+            (
+                H256::from(parse_bytes_n::<32>(regsitry.lock_hash).unwrap()),
+                regsitry.ccid,
+            )
+        })
         .collect()
 }

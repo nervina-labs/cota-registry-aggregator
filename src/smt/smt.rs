@@ -1,4 +1,6 @@
-use crate::db::{check_lock_hashes_registered, get_registered_lock_hashes, RegistryState};
+use crate::db::{
+    check_lock_hashes_registered, get_registered_lock_hashes_and_ccids, RegistryState,
+};
 use crate::error::Error;
 use crate::smt::db::schema::{
     COLUMN_SMT_BRANCH, COLUMN_SMT_LEAF, COLUMN_SMT_ROOT, COLUMN_SMT_TEMP_LEAVES,
@@ -73,19 +75,19 @@ pub fn generate_history_smt<'a>(smt: &mut CotaSMT<'a>, smt_root: [u8; 32]) -> Re
 
 fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     let start_time = Local::now().timestamp_millis();
-    let registered_lock_hashes: Vec<H256> = get_registered_lock_hashes()?;
+    let registered_lock_hashes_and_ccids = get_registered_lock_hashes_and_ccids()?;
     let is_smt_full_leaves = smt.root() == &H256::zero() || is_temp_leaves_non_exit(smt)?;
     let leaves = if is_smt_full_leaves {
-        registered_lock_hashes
+        registered_lock_hashes_and_ccids
             .into_iter()
-            .map(|key| (key, H256::from([255u8; 32])))
+            .map(generate_history_leaf)
             .collect()
     } else {
         debug!("Compare rocksdb and mysql to get diff leaves");
-        registered_lock_hashes
+        registered_lock_hashes_and_ccids
             .into_iter()
-            .filter(|key| smt.is_non_existent(&key))
-            .map(|key| (key, H256::from([255u8; 32])))
+            .filter(|registry| smt.is_non_existent(&registry.0))
+            .map(generate_history_leaf)
             .collect()
     };
     smt.update_all(leaves).expect("SMT update leave error");
@@ -113,4 +115,13 @@ fn is_temp_leaves_non_exit<'a>(smt: &mut CotaSMT<'a>) -> Result<bool, Error> {
         return Ok(is_non_exist);
     }
     Ok(true)
+}
+
+fn generate_history_leaf(registry: (H256, u64)) -> (H256, H256) {
+    let (key, ccid) = registry;
+    let mut value = [0xFFu8; 32];
+    if ccid != u64::MAX {
+        value[0..8].copy_from_slice(&ccid.to_be_bytes());
+    }
+    (key, H256::from(value))
 }

@@ -1,4 +1,7 @@
-use crate::db::{check_lock_hashes_registered, get_syncer_tip_block_number, RegistryState};
+use crate::db::{
+    check_lock_hashes_registered, get_50_registered_lock_hashes, get_syncer_tip_block_number,
+    RegistryState,
+};
 use crate::smt::db::db::RocksDB;
 use crate::smt::entry::generate_registry_smt;
 use crate::utils::parse_request_param;
@@ -41,6 +44,26 @@ pub async fn check_registered_rpc(params: Params) -> Result<Value, Error> {
     response.insert(
         "block_number".to_string(),
         Value::Number(Number::from(block_height)),
+    );
+    Ok(Value::Object(response))
+}
+
+pub async fn update_registered_ccid_rpc(db: &RocksDB) -> Result<Value, Error> {
+    info!("Update registered ccid request");
+    let lock_hashes = get_50_registered_lock_hashes().map_err(|err| err.into())?;
+    let (root_hash, registry_entry) = generate_registry_smt(db, lock_hashes)
+        .await
+        .map_err(|err| err.into())?;
+    let block_number = get_syncer_tip_block_number().map_err(|err| err.into())?;
+    let mut response = Map::new();
+    response.insert("smt_root_hash".to_string(), Value::String(root_hash));
+    response.insert(
+        "registry_smt_entry".to_string(),
+        Value::String(registry_entry),
+    );
+    response.insert(
+        "block_number".to_string(),
+        Value::Number(Number::from(block_number)),
     );
     Ok(Value::Object(response))
 }

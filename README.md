@@ -5,7 +5,7 @@
 
 The registry aggregator service of [CoTA](https://talk.nervos.org/t/rfc-cota-a-compact-token-aggregator-standard-for-extremely-low-cost-nfts-and-fts/6338)
 
-[CoTA Docs](https://developer.mibao.net/docs/cota/overview)
+[CoTA Docs](https://cotadev.io)
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ For compilers to find mysql-client you may need to set:
   export CPPFLAGS="-I/opt/homebrew/opt/mysql-client/include"
 ```
 
-Then put the `RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib'` before `cargo build` and `cargo test`
+Then put the `RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib'` in front of `cargo build` and `cargo test`
 
 ## Quick Start
 
@@ -142,6 +142,42 @@ registered - true for registered and false for unregistered
     "result":{
         "block_number":4735284,
         "registered":false
+    },
+    "id":2
+}
+```
+
+### update_registered_ccid
+
+**Generate SMT root and entry info for registered cell ids**
+
+
+```shell
+echo '{
+    "id": 2,
+    "jsonrpc": "2.0",
+    "method": "update_registered_ccid"
+}' \
+| tr -d '\n' \
+| curl -H 'content-type: application/json' -d @- \
+http://localhost:3050
+```
+
+#### Response
+
+```
+block_number - The latest block number of cota-nft-entries-syncer
+registry_smt_entry - The SMT registry information (origin SMT leaves, SMT proof and other information)
+smt_root_hash - The latest SMT root hash after registry
+```
+
+```shell
+{
+    "jsonrpc":"2.0",
+    "result":{
+        "block_number":4397997,
+        "registry_smt_entry":"...",
+        "smt_root_hash":"16eee06c95fd876c674a1d757654e4becae3f60a72bd10abed3a4f8eee8a7b0e"
     },
     "id":2
 }

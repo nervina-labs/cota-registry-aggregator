@@ -1,4 +1,6 @@
-use crate::db::{check_lock_hashes_registered, get_registered_lock_hashes};
+use crate::db::{
+    check_lock_hashes_registered, get_registered_lock_hashes_and_ccids, RegistryState,
+};
 use crate::error::Error;
 use crate::smt::db::schema::{
     COLUMN_SMT_BRANCH, COLUMN_SMT_LEAF, COLUMN_SMT_ROOT, COLUMN_SMT_TEMP_LEAVES,
@@ -52,25 +54,20 @@ pub fn init_smt<'a>(transaction: &'a StoreTransaction) -> Result<CotaSMT<'a>, Er
     Ok(CotaSMT::new(root, smt_store))
 }
 
-pub fn generate_history_smt<'a>(
-    smt: &mut CotaSMT<'a>,
-    smt_root_opt: Option<[u8; 32]>,
-) -> Result<(), Error> {
+pub fn generate_history_smt<'a>(smt: &mut CotaSMT<'a>, smt_root: [u8; 32]) -> Result<(), Error> {
     let root = *smt.root();
     if root == H256::zero() {
         return generate_mysql_smt(smt);
     }
-    debug!("registry cell smt root: {:?}", smt_root_opt,);
-    if let Some(smt_root) = smt_root_opt {
-        if smt_root.as_slice() == root.as_slice() {
-            debug!("The smt leaves and root in rocksdb are right");
+    debug!("registry cell smt root: {:?}", smt_root);
+    if smt_root.as_slice() == root.as_slice() {
+        debug!("The smt leaves and root in rocksdb are right");
+        return Ok(());
+    } else {
+        reset_smt_temp_leaves(smt)?;
+        if smt_root.as_slice() == smt.root().as_slice() {
+            debug!("The smt leaves and root in rocksdb are right after reset");
             return Ok(());
-        } else {
-            reset_smt_temp_leaves(smt)?;
-            if smt_root.as_slice() == smt.root().as_slice() {
-                debug!("The smt leaves and root in rocksdb are right after reset");
-                return Ok(());
-            }
         }
     }
     generate_mysql_smt(smt)
@@ -78,19 +75,19 @@ pub fn generate_history_smt<'a>(
 
 fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     let start_time = Local::now().timestamp_millis();
-    let registered_lock_hashes: Vec<H256> = get_registered_lock_hashes()?;
+    let registered_lock_hashes_and_ccids = get_registered_lock_hashes_and_ccids()?;
     let is_smt_full_leaves = smt.root() == &H256::zero() || is_temp_leaves_non_exit(smt)?;
     let leaves = if is_smt_full_leaves {
-        registered_lock_hashes
+        registered_lock_hashes_and_ccids
             .into_iter()
-            .map(|key| (key, H256::from([255u8; 32])))
+            .map(generate_history_leaf)
             .collect()
     } else {
         debug!("Compare rocksdb and mysql to get diff leaves");
-        registered_lock_hashes
+        registered_lock_hashes_and_ccids
             .into_iter()
-            .filter(|key| smt.is_non_existent(&key))
-            .map(|key| (key, H256::from([255u8; 32])))
+            .filter(|registry| smt.is_non_existent(&registry.0))
+            .map(generate_history_leaf)
             .collect()
     };
     smt.update_all(leaves).expect("SMT update leave error");
@@ -113,8 +110,18 @@ fn is_temp_leaves_non_exit<'a>(smt: &mut CotaSMT<'a>) -> Result<bool, Error> {
     let leaves_opt = smt.store().get_leaves()?;
     if let Some(leaves) = leaves_opt {
         let lock_hashes: Vec<[u8; 32]> = leaves.into_iter().map(|leaf| leaf.0.into()).collect();
-        let is_exist = check_lock_hashes_registered(lock_hashes)?.0;
-        return Ok(!is_exist);
+        let is_non_exist =
+            check_lock_hashes_registered(lock_hashes)?.0 == RegistryState::Unregister;
+        return Ok(is_non_exist);
     }
     Ok(true)
+}
+
+fn generate_history_leaf(registry: (H256, u64)) -> (H256, H256) {
+    let (key, ccid) = registry;
+    let mut value = [0xFFu8; 32];
+    if ccid != u64::MAX {
+        value[0..8].copy_from_slice(&ccid.to_be_bytes());
+    }
+    (key, H256::from(value))
 }

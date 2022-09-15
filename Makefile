@@ -20,7 +20,7 @@ run:
 
 run-mac:
 	cargo fmt
-	RUST_LOG=info RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib' cargo run
+	RUST_LOG=debug RUSTFLAGS='-L/opt/homebrew/opt/mysql-client/lib' cargo run
 
 run-release:
 	RUST_LOG=info ./target/release/cota-registry-aggregator

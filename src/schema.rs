@@ -14,6 +14,7 @@ table! {
         id -> Bigint,
         block_number -> Unsigned<Bigint>,
         lock_hash -> Char,
+        cota_cell_id -> Unsigned<Bigint>,
         created_at -> Datetime,
         updated_at -> Datetime,
     }

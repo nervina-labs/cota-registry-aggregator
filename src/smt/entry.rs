@@ -23,7 +23,7 @@ lazy_static! {
 pub async fn generate_registry_smt(
     db: &RocksDB,
     lock_hashes: Vec<[u8; 32]>,
-) -> Result<(String, String), Error> {
+) -> Result<(String, String, u64), Error> {
     let update_leaves_count = lock_hashes.len();
     let registry_state = check_lock_hashes_registered(lock_hashes.clone())?.0;
     if registry_state == RegistryState::WithCCID {
@@ -36,6 +36,7 @@ pub async fn generate_registry_smt(
         smt_root,
         account_num,
     } = get_registry_info().await?;
+    let output_account_num = account_num + lock_hashes.len() as u64;
     for (index, lock_hash) in lock_hashes.into_iter().enumerate() {
         let key: H256 = H256::from(lock_hash);
         registry_value[0..8].copy_from_slice(&(account_num + index as u64).to_be_bytes());
@@ -103,7 +104,7 @@ pub async fn generate_registry_smt(
 
     let registry_entry = hex::encode(registry_entries.as_slice());
 
-    Ok((root_hash, registry_entry))
+    Ok((root_hash, registry_entry, output_account_num))
 }
 
 fn with_lock<F>(mut operator: F) -> Result<(), Error>

@@ -13,7 +13,7 @@ pub async fn register_rpc(params: Params, db: &RocksDB) -> Result<Value, Error> 
     info!("Register cota cells request: {:?}", params);
     let registries: Vec<Value> = Params::parse(params)?;
     let lock_hashes = parse_request_param::<32>(registries).map_err(|err| err.into())?;
-    let (root_hash, registry_entry) = generate_registry_smt(db, lock_hashes)
+    let (root_hash, registry_entry, output_account_num) = generate_registry_smt(db, lock_hashes)
         .await
         .map_err(|err| err.into())?;
     let block_number = get_syncer_tip_block_number().map_err(|err| err.into())?;
@@ -22,6 +22,10 @@ pub async fn register_rpc(params: Params, db: &RocksDB) -> Result<Value, Error> 
     response.insert(
         "registry_smt_entry".to_string(),
         Value::String(registry_entry),
+    );
+    response.insert(
+        "output_account_num".to_string(),
+        Value::Number(Number::from(output_account_num)),
     );
     response.insert(
         "block_number".to_string(),
@@ -51,7 +55,7 @@ pub async fn check_registered_rpc(params: Params) -> Result<Value, Error> {
 pub async fn update_registered_ccid_rpc(db: &RocksDB) -> Result<Value, Error> {
     info!("Update registered ccid request");
     let lock_hashes = get_50_registered_lock_hashes().map_err(|err| err.into())?;
-    let (root_hash, registry_entry) = generate_registry_smt(db, lock_hashes)
+    let (root_hash, registry_entry, output_account_num) = generate_registry_smt(db, lock_hashes)
         .await
         .map_err(|err| err.into())?;
     let block_number = get_syncer_tip_block_number().map_err(|err| err.into())?;
@@ -60,6 +64,10 @@ pub async fn update_registered_ccid_rpc(db: &RocksDB) -> Result<Value, Error> {
     response.insert(
         "registry_smt_entry".to_string(),
         Value::String(registry_entry),
+    );
+    response.insert(
+        "output_account_num".to_string(),
+        Value::Number(Number::from(output_account_num)),
     );
     response.insert(
         "block_number".to_string(),

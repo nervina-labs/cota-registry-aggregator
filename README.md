@@ -98,6 +98,7 @@ http://localhost:3050
 block_number - The latest block number of cota-nft-entries-syncer
 registry_smt_entry - The SMT registry information (origin SMT leaves, SMT proof and other information)
 smt_root_hash - The latest SMT root hash after registry
+output_account_num - The latest number of cota cells and the next value of the cota cell id(CCID)
 ```
 
 ```shell
@@ -170,6 +171,7 @@ http://localhost:3050
 block_number - The latest block number of cota-nft-entries-syncer
 registry_smt_entry - The SMT registry information (origin SMT leaves, SMT proof and other information)
 smt_root_hash - The latest SMT root hash after registry
+output_account_num - The latest number of cota cells and the next value of the cota cell id(CCID)
 ```
 
 ```shell

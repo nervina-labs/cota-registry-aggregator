@@ -137,15 +137,6 @@ checksum = "88756126a7634ad9c13ed0a6da9aa3376a6b7000eb5fcdbb89d153196326bbcd"
 
 [[package]]
 name = "blake2b-rs"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e35e362830ef90ecea16f09b21b75d22d33a8562a679c74ab4f4fa49b4fcb87"
-dependencies = [
- "cc",
-]
-
-[[package]]
-name = "blake2b-rs"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89a8565807f21b913288968e391819e7f9b2f0f46c7b89549c051cccf3a2771"
@@ -342,7 +333,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d67c434be841be84498d2cc2d4a17bec9f10e5705d75e017e4afc62a1ceef58"
 dependencies = [
  "blake2b-ref 0.2.1",
- "blake2b-rs 0.2.0",
+ "blake2b-rs",
 ]
 
 [[package]]
@@ -352,7 +343,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac70ef20b9dac406f06bead70c0a2e4742205234f58051885e6ae1f50786e6be"
 dependencies = [
  "blake2b-ref 0.2.1",
- "blake2b-rs 0.2.0",
+ "blake2b-rs",
 ]
 
 [[package]]
@@ -565,7 +556,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "sparse-merkle-tree",
+ "sparse-merkle-tree 0.6.1",
 ]
 
 [[package]]
@@ -576,7 +567,7 @@ dependencies = [
  "blake2b-ref 0.3.0",
  "cfg-if 1.0.0",
  "ckb-types 0.101.8",
- "sparse-merkle-tree",
+ "sparse-merkle-tree 0.5.3",
 ]
 
 [[package]]
@@ -1867,7 +1858,17 @@ version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f84214ec89cb9d304b5d54c7a266951c25bd396b2df5388420a9497a6896120a"
 dependencies = [
- "blake2b-rs 0.1.5",
+ "cfg-if 0.1.10",
+]
+
+[[package]]
+name = "sparse-merkle-tree"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8851f6c92491ebe5528eabc1244292175a739eb0162974f9f9670a7dc748748b"
+dependencies = [
+ "blake2b-rs",
+ "cc",
  "cfg-if 0.1.10",
 ]
 

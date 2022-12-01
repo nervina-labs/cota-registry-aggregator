@@ -4,12 +4,12 @@ use crate::schema::check_infos::dsl::block_number;
 use crate::schema::check_infos::dsl::check_infos;
 use crate::utils::parse_bytes_n;
 use crate::POOL;
-use cota_smt::smt::H256;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::*;
 use jsonrpc_http_server::jsonrpc_core::serde_json::from_str;
 use log::error;
 use serde::{Deserialize, Serialize};
+use sparse_merkle_tree::H256;
 use std::env;
 
 pub type SqlConnectionPool = Pool<ConnectionManager<MysqlConnection>>;
@@ -57,33 +57,20 @@ pub fn get_registered_lock_hashes_and_ccids() -> Result<Vec<(H256, u64)>, Error>
     Ok(leaves)
 }
 
-#[derive(PartialEq, Clone, Copy)]
-pub enum RegistryState {
-    Unregister,
-    WithCCID,
-    NoCCID,
-}
-pub fn check_lock_hashes_registered(
-    lock_hashes: Vec<[u8; 32]>,
-) -> Result<(RegistryState, u64), Error> {
+pub fn check_lock_hashes_registered(lock_hashes: Vec<[u8; 32]>) -> Result<(bool, u64), Error> {
     let conn = &POOL.clone().get().expect("Mysql pool connection error");
     let lock_hash_vec: Vec<String> = lock_hashes.iter().map(hex::encode).collect();
-    let ccids = register_cota_kv_pairs
-        .select(cota_cell_id)
+    let regsitered_count = register_cota_kv_pairs
         .filter(lock_hash.eq_any(lock_hash_vec))
-        .load::<u64>(conn)
+        .count()
+        .get_result::<i64>(conn)
         .map_err(|e| {
             error!("Query registry state error: {}", e.to_string());
             Error::DatabaseQueryError(e.to_string())
         })?;
     let block_height = get_syncer_tip_block_number()?;
-    if ccids.len() < lock_hashes.len() {
-        Ok((RegistryState::Unregister, block_height))
-    } else if ccids.into_iter().any(|ccid| ccid == u64::MAX) {
-        Ok((RegistryState::NoCCID, block_height))
-    } else {
-        Ok((RegistryState::WithCCID, block_height))
-    }
+    let all_registered = lock_hashes.len() == regsitered_count as usize;
+    Ok((all_registered, block_height))
 }
 
 pub fn get_syncer_tip_block_number() -> Result<u64, Error> {
@@ -98,24 +85,6 @@ pub fn get_syncer_tip_block_number() -> Result<u64, Error> {
         })
 }
 
-pub fn get_50_registered_lock_hashes() -> Result<Vec<[u8; 32]>, Error> {
-    let conn = &POOL.clone().get().expect("Mysql pool connection error");
-    let lock_hashes = register_cota_kv_pairs
-        .select(lock_hash)
-        .order(id.asc())
-        .filter(cota_cell_id.eq(u64::MAX))
-        .limit(50)
-        .load::<String>(conn)
-        .map_or_else(
-            |e| {
-                error!("Query 50 registered lock hash error: {}", e.to_string());
-                Err(Error::DatabaseQueryError(e.to_string()))
-            },
-            |hashes| Ok(parse_lock_hashes(hashes)),
-        )?;
-    Ok(lock_hashes)
-}
-
 fn parse_registries(registries: Vec<Registry>) -> Vec<(H256, u64)> {
     registries
         .into_iter()
@@ -125,12 +94,5 @@ fn parse_registries(registries: Vec<Registry>) -> Vec<(H256, u64)> {
                 regsitry.ccid,
             )
         })
-        .collect()
-}
-
-fn parse_lock_hashes(hashes: Vec<String>) -> Vec<[u8; 32]> {
-    hashes
-        .into_iter()
-        .map(|hash| parse_bytes_n::<32>(hash).unwrap())
         .collect()
 }

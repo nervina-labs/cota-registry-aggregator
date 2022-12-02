@@ -9,8 +9,8 @@ pub enum Error {
     )]
     RequestParamHexInvalid(String),
 
-    #[fail(display = "The lock_hash has registered with CCID")]
-    LockHashHasRegisteredWithCCID,
+    #[fail(display = "The lock_hash has registered")]
+    LockHashHasRegistered,
 
     #[fail(display = "Database '{}' query error", _0)]
     DatabaseQueryError(String),
@@ -32,9 +32,7 @@ impl Error {
                 "Request lock_hash '{}' must be 32bytes hex string starting with 0x",
                 msg
             ),
-            Self::LockHashHasRegisteredWithCCID => {
-                "The lock_hash has registered with CCID".to_string()
-            }
+            Self::LockHashHasRegistered => "The lock_hash has registered".to_string(),
             Self::CKBIndexerError(msg) => format!("CKB Indexer error: {}", msg),
             Self::DatabaseQueryError(msg) => format!("Database query error: {}", msg),
             Self::SMTError(msg) => format!("SMT error: {}", msg),

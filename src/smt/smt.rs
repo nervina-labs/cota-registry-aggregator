@@ -1,4 +1,6 @@
-use crate::db::{check_lock_hashes_registered, get_registered_lock_hashes_and_ccids};
+use crate::db::{
+    check_lock_hashes_registered, get_registered_lock_hashes_and_ccids, RegistryState,
+};
 use crate::error::Error;
 use crate::smt::db::schema::{
     COLUMN_SMT_BRANCH, COLUMN_SMT_LEAF, COLUMN_SMT_ROOT, COLUMN_SMT_TEMP_LEAVES,
@@ -6,10 +8,10 @@ use crate::smt::db::schema::{
 use crate::smt::store::smt_store::SMTStore;
 use crate::smt::transaction::store_transaction::StoreTransaction;
 use chrono::prelude::*;
+use cota_smt::smt::{Blake2bHasher, H256};
 use log::debug;
-use sparse_merkle_tree::blake2b::Blake2bHasher;
-use sparse_merkle_tree::traits::StoreReadOps;
-use sparse_merkle_tree::{SparseMerkleTree, H256};
+use sparse_merkle_tree::traits::Store;
+use sparse_merkle_tree::SparseMerkleTree;
 
 pub type CotaSMT<'a> = SparseMerkleTree<Blake2bHasher, H256, SMTStore<'a>>;
 
@@ -108,7 +110,8 @@ fn is_temp_leaves_non_exit<'a>(smt: &mut CotaSMT<'a>) -> Result<bool, Error> {
     let leaves_opt = smt.store().get_leaves()?;
     if let Some(leaves) = leaves_opt {
         let lock_hashes: Vec<[u8; 32]> = leaves.into_iter().map(|leaf| leaf.0.into()).collect();
-        let is_non_exist = !check_lock_hashes_registered(lock_hashes)?.0;
+        let is_non_exist =
+            check_lock_hashes_registered(lock_hashes)?.0 == RegistryState::Unregister;
         return Ok(is_non_exist);
     }
     Ok(true)

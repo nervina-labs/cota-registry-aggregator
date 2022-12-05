@@ -12,7 +12,37 @@ const MAINNET_REGISTRY_COTA_CODE_HASH: &str =
     "0x90ca618be6c15f5857d3cbd09f9f24ca6770af047ba9ee70989ec3b229419ac7";
 const MAINNET_REGISTRY_COTA_ARGS: &str = "0x563631b49cee549f3585ab4dde5f9d590f507f1f";
 
-pub async fn get_registry_root_hash() -> Result<[u8; 32], Error> {
+pub struct RegistryInfo {
+    pub smt_root:    [u8; 32],
+    pub account_num: u64,
+}
+
+impl RegistryInfo {
+    pub fn from(data: &[u8]) -> Result<Self, Error> {
+        if data.len() != 33 && data.len() != 41 {
+            return Err(Error::CKBIndexerError(
+                "Registry cell data length error".to_owned(),
+            ));
+        }
+        let mut smt_root = [0u8; 32];
+        smt_root.copy_from_slice(&data[1..33]);
+
+        let account_num = if data.len() == 33 {
+            0u64
+        } else {
+            let mut num = [0u8; 8];
+            num.copy_from_slice(&data[33..41]);
+            u64::from_be_bytes(num)
+        };
+        let registry = RegistryInfo {
+            smt_root,
+            account_num,
+        };
+        Ok(registry)
+    }
+}
+
+pub async fn get_registry_info() -> Result<RegistryInfo, Error> {
     let ckb_indexer_url = env::var("CKB_INDEXER")
         .map_err(|_e| Error::CKBIndexerError("CKB_INDEXER must be set".to_owned()))?;
 
@@ -50,14 +80,7 @@ pub async fn get_registry_root_hash() -> Result<[u8; 32], Error> {
         ));
     }
     let cell_data = result.objects.first().unwrap().output_data.as_bytes();
-    if cell_data.len() != 33 && cell_data.len() != 41 {
-        return Err(Error::CKBIndexerError(
-            "Registry cell data length error".to_owned(),
-        ));
-    }
-    let mut smt_root = [0u8; 32];
-    smt_root.copy_from_slice(&cell_data[1..33]);
-    Ok(smt_root)
+    RegistryInfo::from(cell_data)
 }
 
 fn generate_params() -> Result<Value, Error> {

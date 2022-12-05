@@ -4,12 +4,12 @@ use crate::smt::db::schema::Col;
 use crate::smt::store::serde::leaf_key_to_vec;
 use crate::smt::transaction::store_transaction::StoreTransaction;
 use crate::smt::types::leaf::{Byte32, SMTLeaf, SMTLeafBuilder, SMTLeafVec, SMTLeafVecBuilder};
+use cota_smt::smt::H256;
 use molecule::prelude::{Builder, Entity};
-use sparse_merkle_tree::H256;
 use sparse_merkle_tree::{
     error::Error as SMTError,
-    traits::{StoreReadOps, StoreWriteOps},
-    BranchKey, BranchNode,
+    traits::Store,
+    tree::{BranchKey, BranchNode},
 };
 use std::convert::TryInto;
 
@@ -106,7 +106,7 @@ impl<'a> SMTStore<'a> {
     }
 }
 
-impl<'a> StoreReadOps<H256> for SMTStore<'a> {
+impl<'a> Store<H256> for SMTStore<'a> {
     fn get_branch(&self, branch_key: &BranchKey) -> Result<Option<BranchNode>, SMTError> {
         match self
             .store
@@ -128,9 +128,7 @@ impl<'a> StoreReadOps<H256> for SMTStore<'a> {
             None => Ok(None),
         }
     }
-}
 
-impl<'a> StoreWriteOps<H256> for SMTStore<'a> {
     fn insert_branch(&mut self, branch_key: BranchKey, branch: BranchNode) -> Result<(), SMTError> {
         self.store
             .insert_raw(

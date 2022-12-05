@@ -88,10 +88,10 @@ pub fn get_syncer_tip_block_number() -> Result<u64, Error> {
 fn parse_registries(registries: Vec<Registry>) -> Vec<(H256, u64)> {
     registries
         .into_iter()
-        .map(|regsitry| {
+        .map(|registry| {
             (
-                H256::from(parse_bytes_n::<32>(regsitry.lock_hash).unwrap()),
-                regsitry.ccid,
+                H256::from(parse_bytes_n::<32>(registry.lock_hash).unwrap()),
+                registry.ccid,
             )
         })
         .collect()

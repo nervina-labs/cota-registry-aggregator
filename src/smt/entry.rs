@@ -1,9 +1,9 @@
 use crate::db::check_lock_hashes_registered;
 use crate::error::Error;
 use crate::indexer::index::{get_registry_info, RegistryInfo};
-use crate::smt::db::db::RocksDB;
 use crate::smt::smt::{generate_history_smt, init_smt, Extension};
 use crate::smt::transaction::store_transaction::StoreTransaction;
+use crate::ROCKS_DB;
 use cota_smt::common::{Byte32, BytesBuilder};
 use cota_smt::molecule::prelude::*;
 use cota_smt::registry::{
@@ -20,10 +20,7 @@ lazy_static! {
         Arc::new((Mutex::new(false), Condvar::new()));
 }
 
-pub async fn generate_registry_smt(
-    db: &RocksDB,
-    lock_hashes: Vec<[u8; 32]>,
-) -> Result<(String, String), Error> {
+pub async fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<(String, String), Error> {
     let update_leaves_count = lock_hashes.len();
     let registry_state = check_lock_hashes_registered(lock_hashes.clone())?.0;
     if registry_state {
@@ -40,7 +37,7 @@ pub async fn generate_registry_smt(
         previous_leaves.push((key, H256::zero()));
     }
 
-    let transaction = &StoreTransaction::new(db.transaction());
+    let transaction = &StoreTransaction::new((&ROCKS_DB).transaction());
     let mut smt = init_smt(transaction)?;
 
     with_lock(|| {

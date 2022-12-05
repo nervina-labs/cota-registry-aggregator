@@ -20,7 +20,7 @@ mod smt;
 mod utils;
 
 lazy_static! {
-    static ref DB: RocksDB = RocksDB::default().expect("RocksDB open error");
+    static ref ROCKS_DB: RocksDB = RocksDB::default().expect("RocksDB open error");
     static ref POOL: SqlConnectionPool = init_connection_pool();
 }
 
@@ -31,7 +31,7 @@ fn main() {
         .init();
 
     let mut io = IoHandler::default();
-    io.add_method("register_cota_cells", |req| register_rpc(req, &DB));
+    io.add_method("register_cota_cells", register_rpc);
     io.add_method("check_registered_lock_hashes", check_registered_rpc);
 
     let server = ServerBuilder::new(io)

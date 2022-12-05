@@ -27,7 +27,7 @@ pub async fn generate_registry_smt(
     let update_leaves_count = lock_hashes.len();
     let registry_state = check_lock_hashes_registered(lock_hashes.clone())?.0;
     if registry_state {
-        return Err(Error::LockHashHasRegisteredWithCCID);
+        return Err(Error::LockHashHasRegistered);
     }
     let mut update_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);
     let mut previous_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);

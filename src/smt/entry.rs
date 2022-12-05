@@ -1,4 +1,4 @@
-use crate::db::{check_lock_hashes_registered, RegistryState};
+use crate::db::check_lock_hashes_registered;
 use crate::error::Error;
 use crate::indexer::index::{get_registry_info, RegistryInfo};
 use crate::smt::db::db::RocksDB;
@@ -23,23 +23,18 @@ lazy_static! {
 pub async fn generate_registry_smt(
     db: &RocksDB,
     lock_hashes: Vec<[u8; 32]>,
-) -> Result<(String, String, u64), Error> {
+) -> Result<(String, String), Error> {
     let update_leaves_count = lock_hashes.len();
     let registry_state = check_lock_hashes_registered(lock_hashes.clone())?.0;
-    if registry_state == RegistryState::WithCCID {
+    if registry_state {
         return Err(Error::LockHashHasRegisteredWithCCID);
     }
     let mut update_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);
     let mut previous_leaves: Vec<(H256, H256)> = Vec::with_capacity(update_leaves_count);
-    let mut registry_value = [255u8; 32];
-    let RegistryInfo {
-        smt_root,
-        account_num,
-    } = get_registry_info().await?;
-    let output_account_num = account_num + lock_hashes.len() as u64;
-    for (index, lock_hash) in lock_hashes.into_iter().enumerate() {
+    let registry_value = [255u8; 32];
+    let RegistryInfo { smt_root } = get_registry_info().await?;
+    for lock_hash in lock_hashes.into_iter() {
         let key: H256 = H256::from(lock_hash);
-        registry_value[0..8].copy_from_slice(&(account_num + index as u64).to_be_bytes());
         let value: H256 = H256::from(registry_value);
         update_leaves.push((key, value));
         previous_leaves.push((key, H256::zero()));
@@ -50,6 +45,10 @@ pub async fn generate_registry_smt(
 
     with_lock(|| {
         generate_history_smt(&mut smt, smt_root)?;
+        info!(
+            "registry cell smt root: {:?}",
+            hex::encode(smt.root().as_slice())
+        );
         smt.update_all(update_leaves.clone())
             .map_err(|e| Error::SMTError(e.to_string()))?;
         smt.save_root_and_leaves(previous_leaves.clone())?;
@@ -68,19 +67,7 @@ pub async fn generate_registry_smt(
 
     let merkel_proof_vec: Vec<u8> = registry_merkle_proof_compiled.into();
 
-    let registry_leaves = if registry_state == RegistryState::NoCCID {
-        update_leaves
-            .into_iter()
-            .map(|leaf| {
-                let mut registry_value_no_ccid = [0xEEu8; 32];
-                registry_value_no_ccid[0..8].copy_from_slice(&leaf.1.as_slice()[0..8]);
-                (leaf.0, H256::from(registry_value_no_ccid))
-            })
-            .collect()
-    } else {
-        update_leaves
-    };
-    let registry_vec = registry_leaves
+    let registry_vec = update_leaves
         .iter()
         .map(|leave| {
             let key: [u8; 32] = leave.0.into();
@@ -104,7 +91,7 @@ pub async fn generate_registry_smt(
 
     let registry_entry = hex::encode(registry_entries.as_slice());
 
-    Ok((root_hash, registry_entry, output_account_num))
+    Ok((root_hash, registry_entry))
 }
 
 fn with_lock<F>(mut operator: F) -> Result<(), Error>

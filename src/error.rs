@@ -32,9 +32,7 @@ impl Error {
                 "Request lock_hash '{}' must be 32bytes hex string starting with 0x",
                 msg
             ),
-            Self::LockHashHasRegistered => {
-                "The lock_hash has registered".to_string()
-            }
+            Self::LockHashHasRegistered => "The lock_hash has registered".to_string(),
             Self::CKBIndexerError(msg) => format!("CKB Indexer error: {}", msg),
             Self::DatabaseQueryError(msg) => format!("Database query error: {}", msg),
             Self::SMTError(msg) => format!("SMT error: {}", msg),

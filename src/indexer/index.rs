@@ -13,8 +13,7 @@ const MAINNET_REGISTRY_COTA_CODE_HASH: &str =
 const MAINNET_REGISTRY_COTA_ARGS: &str = "0x563631b49cee549f3585ab4dde5f9d590f507f1f";
 
 pub struct RegistryInfo {
-    pub smt_root:    [u8; 32],
-    pub account_num: u64,
+    pub smt_root: [u8; 32],
 }
 
 impl RegistryInfo {
@@ -27,17 +26,7 @@ impl RegistryInfo {
         let mut smt_root = [0u8; 32];
         smt_root.copy_from_slice(&data[1..33]);
 
-        let account_num = if data.len() == 33 {
-            0u64
-        } else {
-            let mut num = [0u8; 8];
-            num.copy_from_slice(&data[33..41]);
-            u64::from_be_bytes(num)
-        };
-        let registry = RegistryInfo {
-            smt_root,
-            account_num,
-        };
+        let registry = RegistryInfo { smt_root };
         Ok(registry)
     }
 }

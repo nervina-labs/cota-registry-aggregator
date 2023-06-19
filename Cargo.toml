@@ -11,7 +11,7 @@ rocksdb = { package = "ckb-rocksdb", version = "=0.18.3", features = ["snappy"] 
 hex = "0.4"
 failure = "0.1.8"
 lazy_static = "1.4"
-crc = "3.0.0"
+crc = "3.0.1"
 chrono = "0.4"
 diesel = { version = "1.4.8", features = ["mysql", "r2d2", "numeric"] }
 dotenv = "0.15.0"

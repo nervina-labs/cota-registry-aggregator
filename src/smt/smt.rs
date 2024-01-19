@@ -48,7 +48,10 @@ pub fn init_smt(transaction: &StoreTransaction) -> Result<CotaSMT<'_>, Error> {
         .get_root()
         .map_err(|_e| Error::SMTError("Get smt root".to_string()))?
         .unwrap_or_default();
-    info!("The smt root of local rocksdb: {:?}", hex::encode(root.as_slice()));
+    info!(
+        "The smt root of local rocksdb: {:?}",
+        hex::encode(root.as_slice())
+    );
     Ok(CotaSMT::new(root, smt_store))
 }
 

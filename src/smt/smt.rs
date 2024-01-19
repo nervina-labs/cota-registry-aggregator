@@ -7,7 +7,7 @@ use crate::smt::store::smt_store::SMTStore;
 use crate::smt::transaction::store_transaction::StoreTransaction;
 use chrono::prelude::*;
 use cota_smt::smt::{Blake2bHasher, H256};
-use log::debug;
+use log::{debug, info};
 use sparse_merkle_tree::traits::StoreReadOps;
 use sparse_merkle_tree::SparseMerkleTree;
 
@@ -36,7 +36,7 @@ impl<'a> Extension for CotaSMT<'a> {
     }
 }
 
-pub fn init_smt<'a>(transaction: &'a StoreTransaction) -> Result<CotaSMT<'a>, Error> {
+pub fn init_smt(transaction: &StoreTransaction) -> Result<CotaSMT<'_>, Error> {
     let smt_store = SMTStore::new(
         COLUMN_SMT_LEAF,
         COLUMN_SMT_BRANCH,
@@ -48,30 +48,33 @@ pub fn init_smt<'a>(transaction: &'a StoreTransaction) -> Result<CotaSMT<'a>, Er
         .get_root()
         .map_err(|_e| Error::SMTError("Get smt root".to_string()))?
         .unwrap_or_default();
-    debug!("rocksdb smt root: {:?}", root,);
+    info!("The smt root of local rocksdb: {:?}", hex::encode(root.as_slice()));
     Ok(CotaSMT::new(root, smt_store))
 }
 
-pub fn generate_history_smt<'a>(smt: &mut CotaSMT<'a>, smt_root: [u8; 32]) -> Result<(), Error> {
+pub fn generate_history_smt(smt: &mut CotaSMT<'_>, smt_root: [u8; 32]) -> Result<(), Error> {
     let root = *smt.root();
     if root == H256::zero() {
         return generate_mysql_smt(smt);
     }
-    debug!("registry cell smt root: {:?}", smt_root);
+    info!(
+        "The smt root of registry live cell: {:?}",
+        hex::encode(smt_root)
+    );
     if smt_root.as_slice() == root.as_slice() {
-        debug!("The smt leaves and root in rocksdb are right");
+        info!("The smt leaves and root in rocksdb are right");
         return Ok(());
     } else {
         reset_smt_temp_leaves(smt)?;
         if smt_root.as_slice() == smt.root().as_slice() {
-            debug!("The smt leaves and root in rocksdb are right after reset");
+            info!("The smt leaves and root in rocksdb are right after reset");
             return Ok(());
         }
     }
     generate_mysql_smt(smt)
 }
 
-fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
+fn generate_mysql_smt(smt: &mut CotaSMT<'_>) -> Result<(), Error> {
     let start_time = Local::now().timestamp_millis();
     let registered_lock_hashes_and_ccids = get_registered_lock_hashes_and_ccids()?;
     let is_smt_full_leaves = smt.root() == &H256::zero() || is_temp_leaves_non_exit(smt)?;
@@ -94,7 +97,7 @@ fn generate_mysql_smt<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     Ok(())
 }
 
-fn reset_smt_temp_leaves<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
+fn reset_smt_temp_leaves(smt: &mut CotaSMT<'_>) -> Result<(), Error> {
     let leaves_opt = smt.store().get_leaves()?;
     if let Some(leaves) = leaves_opt {
         smt.update_all(leaves)
@@ -104,7 +107,7 @@ fn reset_smt_temp_leaves<'a>(smt: &mut CotaSMT<'a>) -> Result<(), Error> {
     Ok(())
 }
 
-fn is_temp_leaves_non_exit<'a>(smt: &mut CotaSMT<'a>) -> Result<bool, Error> {
+fn is_temp_leaves_non_exit(smt: &mut CotaSMT<'_>) -> Result<bool, Error> {
     let leaves_opt = smt.store().get_leaves()?;
     if let Some(leaves) = leaves_opt {
         let lock_hashes: Vec<[u8; 32]> = leaves.into_iter().map(|leaf| leaf.0.into()).collect();

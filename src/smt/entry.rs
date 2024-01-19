@@ -37,7 +37,7 @@ pub async fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<(String
         previous_leaves.push((key, H256::zero()));
     }
 
-    let transaction = &StoreTransaction::new((&ROCKS_DB).transaction());
+    let transaction = &StoreTransaction::new(ROCKS_DB.transaction());
     let mut smt = init_smt(transaction)?;
 
     with_lock(|| {

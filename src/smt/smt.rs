@@ -8,7 +8,7 @@ use crate::smt::transaction::store_transaction::StoreTransaction;
 use chrono::prelude::*;
 use cota_smt::smt::{Blake2bHasher, H256};
 use log::debug;
-use sparse_merkle_tree::traits::Store;
+use sparse_merkle_tree::traits::StoreReadOps;
 use sparse_merkle_tree::SparseMerkleTree;
 
 pub type CotaSMT<'a> = SparseMerkleTree<Blake2bHasher, H256, SMTStore<'a>>;

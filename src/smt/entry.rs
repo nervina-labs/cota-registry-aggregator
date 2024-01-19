@@ -55,12 +55,11 @@ pub async fn generate_registry_smt(lock_hashes: Vec<[u8; 32]>) -> Result<(String
     let root_hash = hex::encode(smt.root().as_slice());
     info!("registry_smt_root_hash: {:?}", root_hash);
 
+    let leaf_keys: Vec<H256> = update_leaves.iter().map(|leave| leave.0).collect();
     let registry_merkle_proof = smt
         .merkle_proof(update_leaves.iter().map(|leave| leave.0).collect())
         .unwrap();
-    let registry_merkle_proof_compiled = registry_merkle_proof
-        .compile(update_leaves.clone())
-        .unwrap();
+    let registry_merkle_proof_compiled = registry_merkle_proof.compile(leaf_keys).unwrap();
 
     let merkel_proof_vec: Vec<u8> = registry_merkle_proof_compiled.into();
 
